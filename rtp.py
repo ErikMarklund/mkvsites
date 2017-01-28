@@ -1,16 +1,11 @@
 from basics import *
 from toputil import *
 
-
-
-class rtp(boolBase):
+class Rtp(topBase):
     """RTP reader"""
 
-    def __init__(self, name='', atoms=[], bonds=[], angles=[]):
-        self.name = name
-        self.atoms  = atoms
-        self.bonds  = bonds
-        self.angles = angles
+    def __init__(self, *args, **kwargs):
+        super(Rtp, self).__init__(*args, **kwargs)
         
     def readResidue(self, resName, fileName='aminoacids.rtp'):
         with open(fileName, 'r') as f:
@@ -127,5 +122,3 @@ class rtp(boolBase):
             pass
 
         self.name = resName
-
-        return self

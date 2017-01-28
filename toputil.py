@@ -7,7 +7,18 @@ class RtpError(Exception):
 class FFError(Exception):
     pass
 
-class atom:
+
+class topBase(boolBase):
+    """Base class for itp and rtp"""
+
+    def __init__(self, name='', atoms=[], bonds=[], angles=[]):
+        self.name = ''
+        self.atoms = atoms[:]
+        self.bonds = bonds[:]
+        self.angles = angles[:]
+
+        
+class atom(object):
     """Atom class"""
     
     def __init__(self, name='', type=''):
@@ -16,8 +27,9 @@ class atom:
 
     def isSameType(self, atom):
         return self.type == atom.type
+    
 
-class bond:
+class bond(object):
     """Bond class"""
 
     def __init__(self, atoms=[]):
@@ -28,7 +40,7 @@ class bond:
             self.atoms = atoms
 
 
-class angle:
+class angle(object):
     """Angle class"""
 
     def __init__(self, atoms=[]):
@@ -46,3 +58,4 @@ def readDirective(s):
         return sline[1]
     else:
         return ''
+

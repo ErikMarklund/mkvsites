@@ -2,7 +2,7 @@ from sys import stderr, stdout
 
 # Some basic functions
 
-class boolBase():
+class boolBase(object):
     def __nonzero__(self):
         V = vars(self)
         for v in V.values():

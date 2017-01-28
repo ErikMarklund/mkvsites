@@ -5,7 +5,7 @@ from toputil import *
 from math import *
 import ffield
 import rtp
-
+import itp
 # Topology class and functions for reading rtp files and itp/top files.
 
 # Class for storing the angle constraints.
@@ -244,13 +244,35 @@ class topology:
         self.ffield = ffield.forceField()
         self.ffield.setDirectory(self.directories[-1])
 
-    def itpRead(self, fname='topol.top'):
-        warn('itpRead not implemented yet.')
-        pass
+    def mol2top(self, r):
+        self.atoms = r.atoms
+        self.bonds = r.bonds
+        self.angles = r.angles
 
+        self.makeNodes()
+        
+    def itpRead(self, fileName='topol.top'):
+
+        mol = itp.Itp()
+
+        for d in self.directories:
+            f = path.join(d, fileName)
+            try:
+                mol.read(f)
+            except IOError:
+                warn('Could not read '+f, bWarn=False)
+                continue
+                
+            if mol.name:
+                output('Successfully read '+f)
+                break
+
+        self.mol2top(mol)
+
+            
     def rtpRead(self, resName, fileName='aminoacids.rtp'):
 
-        residue = rtp.rtp()
+        residue = rtp.Rtp()
         
         for d in self.directories:
             f = path.join(d, fileName)
@@ -261,15 +283,11 @@ class topology:
                 continue
                 
             if residue.name:
-                warn('Successfully read '+f, bWarn=False)
+                output('Successfully read '+f)
                 break
 
-        # Copy to self
-        self.atoms = residue.atoms
-        self.bonds = residue.bonds
-        self.angles = residue.angles
+        self.mol2top(residue)
 
-        self.makeNodes()
         
     def atomExists(self, aname):
         for a in self.atoms:
@@ -306,18 +324,19 @@ class topology:
         for a in self.atoms:
             neighbours = []
             for b in self.bonds:
-
+                # Takes atom names, returns atom types. To test if atoms exist in atoms list
+                # Strip '+-' to handle rtp inter-residue bonds.
                 a1 = self.getAtom(b.atoms[0].lstrip('+-'))
                 a2 = self.getAtom(b.atoms[1].lstrip('+-'))
-                
+
                 if not (a1 and a2):
                     warn('Atom not found', bError=True)
                     warn('Bond {:s} -- {:s}'.format(b.atoms[0], b.atoms[1]), bWarn=False)
                     raise TopologyError
-                
-                if (a.type == a1.type):
+
+                if (a.name == a1.name):
                     neighbours.append(a2)
-                elif (a.type == a2.type):
+                elif (a.name == a2.name):
                     neighbours.append(a1)
                 else:
                     continue
@@ -364,7 +383,9 @@ class topology:
         for v in self.vsites:
             output('{:10s}   {:10s}   {:<10f}   {:<10f}   {:<10f}   {:10s}'.format(\
             v.center, v.heavy, v.mDummy, v.dDummy, v.dDummyHeavy, v.name))
-def test():
+
+
+def testRtp():
     top = topology()
 
     top.setFF('charmm36.ff')
@@ -381,5 +402,31 @@ def test():
     top.dumpAngleConstraints()
     top.dumpVsites()
 
+def testItp():
+    top = topology()
+
+    #top.addDirectory('/Users/erikmarklund/Documents/Projects/detergent/forcefield_files/BDDM_FF_CHARMM36')
+    top.addDirectory('/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36')
+    top.setFF('charmm36.ff')
+    top.finalise()
+    top.itpRead(fileName='1-bDM_CHARMM36.itp')
+    top.FFread()
+
+    top.makeAngleConstraints()
+    top.makeVsites()
+    
+    top.dumpAtoms()
+    top.dumpBonds()
+    top.dumpAngles()
+    top.dumpAngleConstraints()
+    top.dumpVsites()
+
+def testBoth():
+    output('##### Testing rtp reader #####')
+    testRtp()
+    output('\n##### Testing itp reader #####')
+    testItp()
+
+    
 if __name__ == '__main__':
-    test()
+    testBoth()
