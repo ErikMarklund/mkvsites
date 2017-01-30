@@ -230,11 +230,10 @@ class topology:
             self.directories.append(d)
 
     def FFread(self):
-        for d in self.directories:
-            try:
-                self.ffield.read()
-            except FFError:
-                warn('No success reading forcefield files in '+d, bWarn=False)
+        try:
+            self.ffield.read()
+        except FFError:
+            warn('No success reading forcefield files in '+path.join([self.gmxPath, self.ffieldName]), bWarn=False)
 
     def setFF(self, ff):
         self.ffieldName = ff
@@ -420,6 +419,12 @@ def testItp():
     top.dumpAngles()
     top.dumpAngleConstraints()
     top.dumpVsites()
+
+    output('### ffVsites ###')
+    top.ffield.gatherVsites()
+    for i, v in enumerate(top.ffield.vsites):
+        output('Vsite {:d}:'.format(i))
+        v.dump()
 
 def testBoth():
     output('##### Testing rtp reader #####')

@@ -1,6 +1,7 @@
 from basics import *
 from toputil import *
 from os import path
+from sys import stderr
 
 class ffAtom(atom):
     def __init__(self, name='', type='', element=''):
@@ -62,7 +63,7 @@ class ffAtomType(boolBase):
 
 class ffBondType(boolBase):
     def __init__(self, atom=[], func=0, b0=0.0, kb=0.0):
-        self.atom = atom
+        self.atom = atom[:]
         self.func = func
         self.b0 = b0
         self.kb = kb
@@ -82,7 +83,7 @@ class ffBondType(boolBase):
 
 class ffConstraintType(boolBase):
     def __init__(self, atom=[], func=0, b0=0.0):
-        self.atom = atom
+        self.atom = atom[:]
         self.func = func
         self.b0 = b0
 
@@ -100,7 +101,7 @@ class ffConstraintType(boolBase):
         
 class ffAngleType(boolBase):
     def __init__(self, atom=[], func=0, theta0=0.0, ktheta=0.0, ub0=0.0, kub=0.0):
-        self.atom = atom
+        self.atom = atom[:]
         self.func = func
         self.theta0 = theta0
         self.ktheta = ktheta
@@ -122,15 +123,16 @@ class ffAngleType(boolBase):
         self.ub0    = float(sline[6])
         self.kub    = float(sline[7])
 
-
+        
 class forceField(boolBase):
-    def __init__(self, ff=''):
+    def __init__(self, ff='', bVerbose=False):
         self.ff = ff
         self.atoms = []
         self.bonds = []
         self.constraints = []
         self.angles = []
         self.vsites = []
+        self.bVerbose = bVerbose
 
     def setDirectory(self, d):
         self.ff = d
@@ -270,7 +272,75 @@ class forceField(boolBase):
         # If not found by now, return False
         return 0.0
     
-    #def gatherVsites(self):
-
+    def gatherVsites(self):
         
+        for a in self.atoms:
+            if not isDummy(a):
+                continue
 
+            v = ffVsite(DummyName=a.type)
+
+            # find constraints
+            for c in self.constraints:
+                if a.type in c.atom:
+                    # AnchorConstraint or DummyConstraint?
+                    if c.atom[0] == c.atom[1]:
+                        v.setDummyConstraint(c.b0)
+                    else:
+                        try:
+                            if a.type == c.atom[0]:
+                                anchor = c.atom[1]
+                            else:
+                                anchor = c.atom[0]
+                                
+                            v.addAnchorConstraint(anchor, c.b0)
+                            
+                        except FFError:
+                            v.dump(o=stderr)
+
+            if v.isComplete():
+                self.vsites.append(v)
+            else:
+                if self.bVerbose:
+                    warn('Discarding incomplete vsite:', bWarn=False)
+                    v.dump(stderr)
+
+
+class ffVsite(boolBase):
+
+    def __init__(self, DummyName='', DummyConstraint=0.0, Anchors=[], AnchorConstraints=[]):
+        self.DummyName = DummyName
+        self.DummyConstraint = DummyConstraint
+        self.Anchors = Anchors[:]
+        self.AnchorConstraints = AnchorConstraints[:]
+
+    def setDummyName(self, name):
+        self.DummyName = name
+        
+    def setDummyConstraint(self, DummyConstraint):
+        if self.DummyConstraint:
+            warn('Dummy constraint already set.')
+            warn('  was: {:f}'.format(self.DummyConstraint), bWarn=False)
+            warn('   is: {:f}'.format(DummyConstraint), bWarn=False)
+            
+        self.DummyConstraint = DummyConstraint
+
+    def addAnchorConstraint(self, Anchor, AnchorConstraint):
+        if Anchor not in self.Anchors:
+            self.Anchors.append(Anchor)
+            self.AnchorConstraints.append(AnchorConstraint)
+        else:
+            warn('Ignoring duplicate Anchor: {:s}, {:f}'.format(Anchor, AnchorConstraint))
+            raise FFError
+
+    def isComplete(self):
+        return self.DummyName and self.DummyConstraint and self.AnchorConstraints
+
+    def dump(self, o=stdout):
+        output('Name:            {:s}'.format(self.DummyName), ostream=o)
+        output('DummyConstraint: {:f}'.format(self.DummyConstraint), ostream=o)
+        for a, c in zip(self.Anchors, self.AnchorConstraints):
+            output('Anchor {:s}: {:f}'.format(a, c), ostream=o)
+        
+def isDummy(a):
+    return (a.mass == 0 and a.atnum == 0 and a.charge == 0.0 and a.sigma == 0.0 and a.epsilon == 0.0)
