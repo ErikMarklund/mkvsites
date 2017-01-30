@@ -130,6 +130,7 @@ class forceField(boolBase):
         self.bonds = []
         self.constraints = []
         self.angles = []
+        self.vsites = []
 
     def setDirectory(self, d):
         self.ff = d
@@ -137,80 +138,82 @@ class forceField(boolBase):
     def read(self):
         # Read in atomtypes from ffnonbonded.itp
         fname = path.join(self.ff, 'ffnonbonded.itp')
-        with open(fname, 'r') as f:
-            reading = 'None'
-            for line in f:
-                if not line.split(';')[0].split():
-                    continue
+        preprocessor = Cpp()
+        bSkip = False
+        f = preprocessor.parse(fname)
+        reading = 'None'
+        for line in f:
+            if not line.split(';')[0].split():
+                continue
 
-                if line and line.lstrip()[0] == '#':
-                    continue
+            if line and line.lstrip()[0] == '#':
+                continue
 
-                directive = readDirective(line)
-                if directive:
-                    reading = directive
-                    continue
+            directive = readDirective(line)
+            if directive:
+                reading = directive
+                continue
 
-                if reading == 'atomtypes':
-                    ffat = ffAtomType()
+            if reading == 'atomtypes':
+                ffat = ffAtomType()
 
-                    try:
-                        ffat.readFFAtomTypeLine(line)
-                        self.atoms.append(ffat)
-                    except FFError:
-                        warn('Unexpected line under atomtypes:')
-                        warn(line, bWarn=False)
+                try:
+                    ffat.readFFAtomTypeLine(line)
+                    self.atoms.append(ffat)
+                except FFError:
+                    warn('Unexpected line under atomtypes:')
+                    warn(line, bWarn=False)
 
-                else:
-                    continue
+            else:
+                continue
                 
         # Read in bonded types from ffbonded.itp
         fname = path.join(self.ff, 'ffbonded.itp')
-        with open(fname, 'r') as f:
-            reading = 'None'
-            for line in f:
-                if not line.split(';')[0].split():
-                    continue
-                
-                if line and line.lstrip()[0] == '#':
-                    continue
+        f = preprocessor.parse(fname)
+        reading = 'None'
+        for line in f:
+            if not line.split(';')[0].split():
+                continue
 
-                directive = readDirective(line)
-                if directive:
-                    reading = directive
-                    continue
+            if line and line.lstrip()[0] == '#':
+                continue
 
-                elif reading == 'bondtypes':
-                    ffbo = ffBondType()
+            directive = readDirective(line)
+            if directive:
+                reading = directive
+                continue
 
-                    try:
-                        ffbo.readFFBondTypeLine(line)
-                        self.bonds.append(ffbo)
-                    except FFError:
-                        warn('Unexpected line under bondtypes:')
-                        warn(line, bWarn=False)
+            elif reading == 'bondtypes':
+                ffbo = ffBondType()
 
-                elif reading == 'constrainttypes':
-                    ffco = ffConstraintType()
+                try:
+                    ffbo.readFFBondTypeLine(line)
+                    self.bonds.append(ffbo)
+                except FFError:
+                    warn('Unexpected line under bondtypes:')
+                    warn(line, bWarn=False)
 
-                    try:
-                        ffco.readFFConstraintTypeLine(line)
-                        self.constraints.append(ffco)
-                    except FFError:
-                        warn('Unexpected line under constrainttypes:')
-                        warn(line, bWarn=False)
+            elif reading == 'constrainttypes':
+                ffco = ffConstraintType()
 
-                elif reading == 'angletypes':
-                    ffan = ffAngleType()
+                try:
+                    ffco.readFFConstraintTypeLine(line)
+                    self.constraints.append(ffco)
+                except FFError:
+                    warn('Unexpected line under constrainttypes:')
+                    warn(line, bWarn=False)
 
-                    try:
-                        ffan.readFFAngleTypeLine(line)
-                        self.angles.append(ffan)
-                    except FFError:
-                        warn('Unexpected line under angletypes:')
-                        warn(line, bWarn=False)
-                else:
-                    continue
+            elif reading == 'angletypes':
+                ffan = ffAngleType()
+
+                try:
+                    ffan.readFFAngleTypeLine(line)
+                    self.angles.append(ffan)
+                except FFError:
+                    warn('Unexpected line under angletypes:')
+                    warn(line, bWarn=False)
+            else:
+                continue
 
 
     def getAtom(self, n):
@@ -267,4 +270,7 @@ class forceField(boolBase):
         # If not found by now, return False
         return 0.0
     
-    
+    #def gatherVsites(self):
+
+        
+

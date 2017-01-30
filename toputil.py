@@ -1,4 +1,5 @@
 from basics import *
+import subprocess as sp
 
 class TopologyError(Exception):
     pass
@@ -50,6 +51,25 @@ class angle(object):
         else:
             self.atoms = atoms
 
+
+
+class Cpp():
+    def __init__(self, defs=[], exe='cpp', flags='-E -P'):
+        self.exe = exe[:]
+        self.flags = flags[:]
+
+    def parse(self, fname):
+        """Returns a list of lines that can be read like an open file."""
+        cmd = [self.exe] + self.flags.split() + [fname]
+        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+        so, se = p.communicate()
+
+        if so:
+            return so.splitlines()
+        else:
+            return []
+        
+
 def readDirective(s):
     # Remove comments, then split normally
     sline = s.split(';')[0].split()
@@ -59,3 +79,5 @@ def readDirective(s):
     else:
         return ''
 
+        
+        
