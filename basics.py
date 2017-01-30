@@ -10,7 +10,7 @@ class boolBase(object):
                 return True
         return False
 
-def warn(s, bEndline=True, bWarn=True, bError=False):
+def warn(s, bEndline=True, bWarn=True, bError=False, ostream=stderr):
     if bEndline:
         s += '\n'
 
@@ -24,8 +24,8 @@ def warn(s, bEndline=True, bWarn=True, bError=False):
     stderr.write(s)
     
     
-def output(s, bEndline=True):
+def output(s, bEndline=True, ostream=stdout):
     if bEndline:
         s += '\n'
 
-    stdout.write(s)
+    ostream.write(s)
