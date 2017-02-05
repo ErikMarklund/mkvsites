@@ -238,6 +238,9 @@ class topology:
     def setFF(self, ff):
         self.ffieldName = ff
 
+    def getFF(self):
+        return self.ffieldName
+
     def finalise(self):
         self.directories.append(path.join(self.gmxPath, 'top', self.ffieldName))
         self.ffield = ffield.forceField()
