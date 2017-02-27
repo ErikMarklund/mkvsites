@@ -75,3 +75,6 @@ if __name__ == '__main__':
 
         t.dumpAngleConstraints()
         t.dumpVsites()
+
+        t.identifyVsites()
+        t.dumpVsiteTypes()

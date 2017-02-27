@@ -27,9 +27,11 @@ class constraint(boolBase):
 
 # Class for storing vsites.
 class vsite(boolBase):
-    def __init__(self, center='', heavy='', nH=0, mDummy=0.0, dDummy=0.0, dDummyHeavy=0.0, name=''):
+    def __init__(self, center='', heavy='', cType='', hType='', nH=0, mDummy=0.0, dDummy=0.0, dDummyHeavy=0.0, name=''):
         self.center = center
         self.heavy  = heavy
+        self.centerType = cType
+        self.heavyType = hType
         self.nH     = nH
         # Mass of a single dummy mass
         self.mDummy = mDummy
@@ -69,6 +71,27 @@ class vsite(boolBase):
         # We give a name based on center and nH, with trailing underscore to distinguish from existing vsites.
         self.name = 'M{:s}H{:d}_'.format(c.getElement(), self.nH)
 
+    def setCType(self, cType):
+        self.cType = cType
+
+    def setHType(self, hType):
+        self.hType = hType
+
+    def deriveTypes(self, ff):
+        """Derives atom types for center and heavy"""
+        c = getAtom(self.center)
+        if c:
+            self.setCType(c.type)
+        else:
+            self.setCType('')
+
+        h = getAtom(self.heavy)
+        if h:
+            self.setHType(h.type)
+        else:
+            self.setHType('')
+
+
     # Does not consider nH or name.
     def isSame(self, v):
         return (self.center == v.center and \
@@ -76,7 +99,6 @@ class vsite(boolBase):
                 self.mDummy == v.mDummy and \
                 abs(self.dDummy-v.dDummy) < 0.00001 and \
                 abs(self.dDummyHeavy-v.dDummyHeavy) < 0.00001)
-        
         
 # Atom with neighbours
 class node(boolBase):
@@ -385,6 +407,50 @@ class topology:
         for v in self.vsites:
             output('{:10s}   {:10s}   {:<10f}   {:<10f}   {:<10f}   {:10s}'.format(\
             v.center, v.heavy, v.mDummy, v.dDummy, v.dDummyHeavy, v.name))
+
+    def addNewVsiteType(self, v):
+        # Does it already exist?
+        for u in self.uniqueVsites:
+            if u.DummyConstraint == v.DummyConstraint \
+              and u.Anchor == v.Anchor \
+              and u.AnchorConstraint == v.AnchorConstraint:
+                return
+
+        # Ok, so a new one.
+        if v.DummyName[-1] == '_':
+            Mnames = [u.DummyName for u in self.uniqueVsites]
+            i = 1
+            while v.DummyName+str(i) in Mnames:
+                i += 1
+
+            v.DummyName = v.DummyName+str(i)
+
+        self.uniqueVsites.append(v)
+
+    def identifyVsites(self):
+        self.uniqueVsites = []
+
+        for v in self.vsites:
+            vt = self.ffield.getVsiteType(v)
+            if not vt:
+                vt = ffield.ffVsiteType(DummyName=v.name,
+                                     DummyConstraint=v.dDummy,
+                                     Anchor=v.heavy,
+                                     AnchorConstraint=v.dDummyHeavy)
+
+            self.addNewVsiteType(vt)
+
+    def dumpVsiteTypes(self):
+        output('### Vsites to add')
+        output('# Constraints (ffbonded.itp)')
+        for u in self.uniqueVsites:
+            output('{:8s}{:8s} 2    {:8.6f}'.format(u.DummyName, u.DummyName, u.DummyConstraint))
+            output('{:8s}{:8s} 2    {:8.6f}'.format(u.DummyName, u.Anchor, u.AnchorConstraint))
+
+        output('# Dummy masses (ffnonbonded.itp)')
+        for u in self.uniqueVsites:
+            output('{:8s}0   0.000000    0.00    A   0.0 0.0'.format(u.DummyName))
+
 
 
 def testRtp():

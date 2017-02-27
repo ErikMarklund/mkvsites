@@ -305,6 +305,24 @@ class forceField(boolBase):
                     warn('Discarding incomplete vsite:', bWarn=False)
                     v.dump(stderr)
 
+    def getVsiteType(self, v):
+        """Returns the ffVsite if match, otherwise None"""
+        for vf in self.vsites:
+            vt = vt.getVsiteType()
+            if vt:
+                return vt
+
+        return None
+
+
+class ffVsiteType(boolBase):
+
+    def __init__(self, DummyName='', DummyConstraint=0.0, Anchor='', AnchorConstraint=0.0):
+        self.DummyName = DummyName
+        self.DummyConstraint = DummyConstraint
+        self.Anchor = Anchor
+        self.AnchorConstraint = AnchorConstraint
+
 
 class ffVsite(boolBase):
 
@@ -341,6 +359,21 @@ class ffVsite(boolBase):
         output('DummyConstraint: {:f}'.format(self.DummyConstraint), ostream=o)
         for a, c in zip(self.Anchors, self.AnchorConstraints):
             output('Anchor {:s}: {:f}'.format(a, c), ostream=o)
+
+    def getVsiteType(self, v):
+        """Takes a topology.vsite and compares with self."""
+        # Allow 1% discrepancy (Order of 1/100 A)
+        if abs(v.dDD-self.DummyConstraint)/self.DummyConstraint > 0.01:
+            return None
+
+        for a, ac in zip(self.Anchors, self.AnchorConstraints):
+            if abs(v.dDHeavy-ac)/ac < 0.01:
+                return ffVsiteType(DummyName=self.DummyName,
+                                       DummyConstraint=self.DummyConstraint,
+                                       Anchor=a, AnchorConstraint=ac)
+
+        return None
+
         
 def isDummy(a):
     return (a.mass == 0 and a.atnum == 0 and a.charge == 0.0 and a.sigma == 0.0 and a.epsilon == 0.0)
