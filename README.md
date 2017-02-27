@@ -29,7 +29,7 @@ issue `source <path-to-gromacs-installation>/bin/GMXRC.bash` (assuming bash)
 
     The amber99sb-ildn force field is used by default. -ff can be used to specify another force field.
 
-    + For itp files: `python mkvsites.py -ff=charmm36.ff <path-to>/topology.itp
+    + For itp files: `python mkvsites.py -ff=charmm36.ff <path-to>/topology.itp`
     + For rtp files: `python mkvsites.py -ff=charmm36.ff -res=POPE $GMXDATA/top/charmm36.ff/merged.rtp`
 
 ### Contribution guidelines ###
