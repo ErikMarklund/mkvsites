@@ -1,18 +1,10 @@
 from math import *
-from sys import exit, argv
+from sys import exit
 import topology as top
 from os import path
 from basics import *
+import argparse
 
-def dump_help():
-    output('  USAGE: python mkvsites.py <options> rtp/itp-file\n')
-    output('  mkvsites.py reads an rtp entry or an itp file, and derives')
-    output('  the angle constraints and vsite parameters needed for')
-    output('  simulating with a longer time step.\n')
-    output('  OPTIONS:')
-    output('  -h        : Display this help text and quit')
-    output('  -ff=FF    : Employ force field FF')
-    output('  -res=RES  : With rtp files, make vsites for residue RES')
 
 
 # Read topology/rtp and make vsite parameters and angle-constraints for OH groups.
@@ -21,43 +13,20 @@ def dump_help():
 # and generates the necessary parameters using bond lengths and angles from forcefield.
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Calculate stuff")
+    parser.add_argument('-ff', '--force-field', action='store', nargs=1, type=str, required=True, metavar='FF', dest='ff', help='Path to force field.')
+    parser.add_argument('-res', '--residue', action='store', nargs=1, type=str, metavar='RES', dest='res', help='Residue name, rtp files only.')
+    parser.add_argument('file', action='store', nargs=1, type=str, help='itp or rtp file')
+
+    args = parser.parse_args()
+
     t = top.topology()
 
-    ff = ''
-    res = ''
+    ff = args.ff[0]
+    res = args.res[0]
+    topfile = args.file[0]
 
-    for a in argv[1:]:
-        if a[0] == '-':
-            # Flag/option
-
-            sarg = a.split('=')
-            flag = sarg[0]
-
-            if flag == '-h':
-                dump_help()
-                exit(0)
-
-            elif flag == '-ff':
-                if ff:
-                    warn('Forcefield can only be chosen once.', bError=True)
-
-                try:
-                    ff = sarg[1]
-                except IndexError:
-                    warn('Expected -ff=forcefield.ff, got {:a}'.format(a), bError=True)
-
-            elif flag == '-res':
-                res = sarg[1]
-
-        else:
-            # Topology file to analyse
-            topfile = a
-
-
-    if ff:
-        t.setFF(ff)
-    else:
-        output('No force field specified. Will use {:s}.'.format(t.getFF()))
+    t.setFF(ff)
 
     t.finalise()
 
