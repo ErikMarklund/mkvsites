@@ -23,7 +23,10 @@ if __name__ == '__main__':
     t = top.topology()
 
     ff = args.ff[0]
-    res = args.res[0]
+    if args.res:
+        res = args.res[0]
+    else:
+        res = None
     topfile = args.file[0]
 
     t.setFF(ff)
@@ -42,15 +45,12 @@ if __name__ == '__main__':
 
         elif ext == '.rtp':
             output('Input is rtp file')
+            if not res:
+                parser.error('Need to provide residue name with rtp files (-res).')
             t.rtpRead(res, fileName=topbase)
 
-            if not res:
-                warn('Need to provide residue name with rtp files (-res=resname).', bError=True)
-                exit(1)
-
         else:
-            warn('Unsupported file type: {:s}'.format(topbase), bError=True)
-            exit(1)
+            parser.error('Unsupported file type: {:s}'.format(topbase))
 
         output('Will find vsites and angle constraints for {:s} dressed in the forcefield {:s}'.format(topfile, ff))
         t.FFread()
