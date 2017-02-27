@@ -4,6 +4,17 @@ import topology as top
 from os import path
 from basics import *
 
+def dump_help():
+    output('  USAGE: python mkvsites.py <options> rtp/itp-file\n')
+    output('  mkvsites.py reads an rtp entry or an itp file, and derives')
+    output('  the angle constraints and vsite parameters needed for')
+    output('  simulating with a longer time step.\n')
+    output('  OPTIONS:')
+    output('  -h        : Display this help text and quit')
+    output('  -ff=FF    : Employ force field FF')
+    output('  -res=RES  : With rtp files, make vsites for residue RES')
+
+
 # Read topology/rtp and make vsite parameters and angle-constraints for OH groups.
 #
 # Reads topology/rtp, finds geometries in need of dummy masses or angle constraints,
@@ -22,7 +33,11 @@ if __name__ == '__main__':
             sarg = a.split('=')
             flag = sarg[0]
 
-            if flag == '-ff':
+            if flag == '-h':
+                dump_help()
+                exit(0)
+
+            elif flag == '-ff':
                 if ff:
                     warn('Forcefield can only be chosen once.', bError=True)
 
