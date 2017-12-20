@@ -13,12 +13,22 @@ import argparse
 # and generates the necessary parameters using bond lengths and angles from forcefield.
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="Calculate stuff")
+    __version__ = '0.1'
+
+    parser = argparse.ArgumentParser(description="Calculates missing constraints for virtual-site constructions.")
     parser.add_argument('-ff', '--force-field', action='store', nargs=1, type=str, required=True, metavar='FF', dest='ff', help='Path to force field.')
     parser.add_argument('-res', '--residue', action='store', nargs=1, type=str, metavar='RES', dest='res', help='Residue name, rtp files only.')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Be loud and noisy')
+    parser.add_argument('-ver', '--version', action='store_true', help='Print version')
     parser.add_argument('file', action='store', nargs=1, type=str, help='itp or rtp file')
 
     args = parser.parse_args()
+
+    bVersion = vars(args)['version']
+    bVerbose = vars(args)['verbose']
+
+    if bVersion:
+        output('Version {:s}'.format(__version__))
 
     t = top.topology()
 
@@ -40,14 +50,14 @@ if __name__ == '__main__':
         ext = path.splitext(topbase)[-1]
 
         if ext == '.itp':
-            output('Input is itp file')
-            t.itpRead(fileName=topbase)
+            output('Input is itp file', bPrint=bVerbose)
+            t.itpRead(fileName=topbase, bVerbose=bVerbose)
 
         elif ext == '.rtp':
-            output('Input is rtp file')
+            output('Input is rtp file', bPrint=bVerbose)
             if not res:
                 parser.error('Need to provide residue name with rtp files (-res).')
-            t.rtpRead(res, fileName=topbase)
+            t.rtpRead(res, fileName=topbase, bVerbose=bVerbose)
 
         else:
             parser.error('Unsupported file type: {:s}'.format(topbase))
@@ -57,8 +67,9 @@ if __name__ == '__main__':
         t.makeAngleConstraints()
         t.makeVsites()
 
-        t.dumpAngleConstraints()
-        t.dumpVsites()
+        if bVerbose:
+            t.dumpAngleConstraints()
+            t.dumpVsites()
 
         t.identifyVsites()
         t.dumpVsiteTypes()
