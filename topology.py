@@ -275,7 +275,7 @@ class topology:
 
         self.makeNodes()
         
-    def itpRead(self, fileName='topol.top'):
+    def itpRead(self, fileName='topol.top', bVerbose=False):
 
         mol = itp.Itp()
 
@@ -284,17 +284,17 @@ class topology:
             try:
                 mol.read(f)
             except IOError:
-                warn('Could not read '+f, bWarn=False)
+                warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
                 continue
                 
             if mol.name:
-                output('Successfully read '+f)
+                output('Successfully read '+f, bPrint=bVerbose)
                 break
 
         self.mol2top(mol)
 
             
-    def rtpRead(self, resName, fileName='aminoacids.rtp'):
+    def rtpRead(self, resName, fileName='aminoacids.rtp', bVerbose=False):
 
         residue = rtp.Rtp()
         
@@ -303,11 +303,11 @@ class topology:
             try:
                 residue.readResidue(resName, fileName=f)
             except IOError:
-                warn('Could not read '+f, bWarn=False)
+                warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
                 continue
                 
             if residue.name:
-                output('Successfully read '+f)
+                output('Successfully read '+f, bPrint=bVerbose)
                 break
 
         self.mol2top(residue)
