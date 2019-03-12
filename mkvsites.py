@@ -49,8 +49,8 @@ if __name__ == '__main__':
         t.addDirectory(topdir)
         ext = path.splitext(topbase)[-1]
 
-        if ext == '.itp':
-            output('Input is itp file', bPrint=bVerbose)
+        if ext in [ '.itp', '.top' ] :
+            output('Input is {:s} file'.format(ext.lstrip('.')), bPrint=bVerbose)
             t.itpRead(fileName=topbase, bVerbose=bVerbose)
 
         elif ext == '.rtp':
