@@ -113,15 +113,17 @@ class ffAngleType(boolBase):
             raise(FFError)
         
         sline = line.split(';')[0].split()
-        if not sline or len(sline) != 8:
+        if not sline or len(sline) < 6:
             raise(FFError)
 
         self.atom   = [sline[0], sline[1], sline[2]]
         self.func   = int(sline[3])
         self.theta0 = float(sline[4])
         self.ktheta = float(sline[5])
-        self.ub0    = float(sline[6])
-        self.kub    = float(sline[7])
+        if len(sline) > 6:
+            self.ub0    = float(sline[6])
+        if len(sline) > 7:
+            self.kub    = float(sline[7])
 
         
 class forceField(boolBase):
