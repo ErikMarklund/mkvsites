@@ -2,6 +2,7 @@
 
 from sys import exit
 import pdb
+import argparse
 
 class interaction:
     def __init__(self):
@@ -104,7 +105,15 @@ class atom_dict:
         return ai
 
 if __name__=='__main__':
-    fname = 'SR1_cofactor.top'
+
+    parser = argparse.ArgumentParser(description="Extracts force field parameters for e.g. GAFF topologies.")
+    parser.add_argument('file', action='store', nargs=1, type=str, help='itp or rtp file')
+
+    args = parser.parse_args()
+
+    #fname='/Users/erikmarklund/Projects/Interface_evolution/Structures/topologies/SR1_cofactor_new/FF_CONV/BCC/GMX_SR1_cofactor_new/SR1_cofactor_new.top'
+
+    fname = args.file[0]
 
     adict = atom_dict()
     idict = atom_dict()
