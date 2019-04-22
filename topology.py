@@ -249,8 +249,6 @@ class topology:
     """Topology class"""
     
     def __init__(self):
-        self.ffieldName = ''
-
         self.ffield = ffield.forceField()
 
         self.atoms  = []
@@ -266,20 +264,18 @@ class topology:
         try:
             self.ffield.read()
         except FFError:
-            if self.ffieldName:
-                fdir = self.ffieldName
-            else:
+            fdir = self.ffield.getPath()
+            if not fdir:
                 fdir = 'current directory'
             warn('No success reading forcefield files in '+fdir, bWarn=False)
 
     def setFF(self, ff):
         """Sets the name of the forcefield"""
-        self.ffieldName = ff
-        self.ffield.ff = ff
+        self.ffield.setPath(ff)
 
     def getFF(self):
         """Returns the name of the forcefield"""
-        return self.ffieldName
+        return self.ffield.getPath()
 
     def mol2top(self, r):
         """Stores the atoms, bonds, and angles from a molecule/residue."""
@@ -485,7 +481,7 @@ def testRtp():
     top = topology()
     ffpath='/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36/charmm36-jun2015.ff'
     top.setFF(ffpath)
-    rtppath=path.join(top.ffieldName,'merged.rtp')
+    rtppath=path.join(ffpath,'merged.rtp')
     top.rtpRead('THR', fileName=rtppath)
 
     top.FFread()

@@ -151,6 +151,10 @@ class forceField(boolBase):
     def setPath(self, d):
         """Set path to forcefield directory"""
         self.ff = d
+
+    def getPath(self):
+        """Returns path to forcefield"""
+        return self.ff
         
     def read(self):
         """Read forcefield data"""
