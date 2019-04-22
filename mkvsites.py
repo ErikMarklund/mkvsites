@@ -40,24 +40,21 @@ if __name__ == '__main__':
     topfile = args.file[0]
 
     t.setFF(ff)
-
-    t.finalise()
-
     
     if topfile:
-        topdir, topbase = path.split(topfile)
-        t.addDirectory(topdir)
-        ext = path.splitext(topbase)[-1]
+        #topdir, topbase = path.split(topfile)
+        #t.addDirectory(topdir)
+        ext = path.splitext(topfile)[-1]
 
         if ext in [ '.itp', '.top' ] :
             output('Input is {:s} file'.format(ext.lstrip('.')), bPrint=bVerbose)
-            t.itpRead(fileName=topbase, bVerbose=bVerbose)
+            t.itpRead(fileName=topfile, bVerbose=bVerbose)
 
         elif ext == '.rtp':
             output('Input is rtp file', bPrint=bVerbose)
             if not res:
                 parser.error('Need to provide residue name with rtp files (-res).')
-            t.rtpRead(res, fileName=topbase, bVerbose=bVerbose)
+            t.rtpRead(res, fileName=topfile, bVerbose=bVerbose)
 
         else:
             parser.error('Unsupported file type: {:s}'.format(topbase))

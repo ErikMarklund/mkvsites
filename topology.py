@@ -249,17 +249,9 @@ class topology:
     """Topology class"""
     
     def __init__(self):
-        self.directories = ['./']
-        try:
-            self.gmxPath = environ['GMXDATA']
-            if not self.gmxPath:
-                raise(KeyError)
-        except KeyError:
-            warn('GMXDATA not set.')
-            
-        self.ffieldName = 'amber99sb-ildn.ff'
+        self.ffieldName = ''
 
-        self.ffield = None
+        self.ffield = ffield.forceField()
 
         self.atoms  = []
         self.bonds  = []
@@ -268,31 +260,26 @@ class topology:
         self.angleConstraints = []
         self.vsites = []
 
-    def addDirectory(self, d):
-        """Adds a directory to the list of directories"""
-        if d not in self.directories:
-            self.directories.append(d)
 
     def FFread(self):
         """Reads the forcefield"""
         try:
             self.ffield.read()
         except FFError:
-            warn('No success reading forcefield files in '+path.join([self.gmxPath, self.ffieldName]), bWarn=False)
+            if self.ffieldName:
+                fdir = self.ffieldName
+            else:
+                fdir = 'current directory'
+            warn('No success reading forcefield files in '+fdir, bWarn=False)
 
     def setFF(self, ff):
         """Sets the name of the forcefield"""
         self.ffieldName = ff
+        self.ffield.ff = ff
 
     def getFF(self):
         """Returns the name of the forcefield"""
         return self.ffieldName
-
-    def finalise(self):
-        """Sets up directory paths, adds force field"""
-        self.directories.append(path.join(self.gmxPath, 'top', self.ffieldName))
-        self.ffield = ffield.forceField()
-        self.ffield.setDirectory(self.directories[-1])
 
     def mol2top(self, r):
         """Stores the atoms, bonds, and angles from a molecule/residue."""
@@ -306,17 +293,17 @@ class topology:
         """Reads itp for a molecule and stores the atoms, bonds, and angles."""
         mol = itp.Itp()
 
-        for d in self.directories:
-            f = path.join(d, fileName)
-            try:
-                mol.read(f)
-            except IOError:
-                warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
-                continue
-                
-            if mol.name:
-                output('Successfully read '+f, bPrint=bVerbose)
-                break
+        f = fileName
+
+        try:
+            mol.read(f)
+        except IOError:
+            warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
+
+        if mol.name:
+            output('Successfully read '+f, bPrint=bVerbose)
+        else:
+            raise TopologyError
 
         self.mol2top(mol)
 
@@ -325,17 +312,16 @@ class topology:
         """Reads specific entry from rtp file and stores the atoms, bonds, and angles."""
         residue = rtp.Rtp()
         
-        for d in self.directories:
-            f = path.join(d, fileName)
-            try:
-                residue.readResidue(resName, fileName=f)
-            except IOError:
-                warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
-                continue
-                
-            if residue.name:
-                output('Successfully read '+f, bPrint=bVerbose)
-                break
+        f = fileName
+        try:
+            residue.readResidue(resName, fileName=f)
+        except IOError:
+            warn('Could not read '+f, bWarn=False, bPrint=bVerbose)
+
+        if residue.name:
+            output('Successfully read '+f, bPrint=bVerbose)
+        else:
+            raise TopologyError
 
         self.mol2top(residue)
 
@@ -497,10 +483,11 @@ class topology:
 def testRtp():
     """Function for testing the Rtp class"""
     top = topology()
+    ffpath='/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36/charmm36-jun2015.ff'
+    top.setFF(ffpath)
+    rtppath=path.join(top.ffieldName,'merged.rtp')
+    top.rtpRead('THR', fileName=rtppath)
 
-    top.setFF('charmm36.ff')
-    top.finalise()
-    top.rtpRead('THR', fileName='merged.rtp')
     top.FFread()
 
     top.makeAngleConstraints()
@@ -515,12 +502,12 @@ def testRtp():
 def testItp():
     """Function for testing the Itp class"""
     top = topology()
+    ffpath='/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36/charmm36-jun2015.ff'
+    top.setFF(ffpath)
+    itppath='/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36/1-bDM_CHARMM36.itp'
+    print itppath
+    top.itpRead(fileName=itppath)
 
-    #top.addDirectory('/Users/erikmarklund/Documents/Projects/detergent/forcefield_files/BDDM_FF_CHARMM36')
-    top.addDirectory('/Users/erikmarklund/src/mkvsites/testdata/BDDM_FF_CHARMM36')
-    top.setFF('charmm36.ff')
-    top.finalise()
-    top.itpRead(fileName='1-bDM_CHARMM36.itp')
     top.FFread()
 
     top.makeAngleConstraints()

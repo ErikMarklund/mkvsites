@@ -148,7 +148,8 @@ class forceField(boolBase):
         self.vsites = []
         self.bVerbose = bVerbose
 
-    def setDirectory(self, d):
+    def setPath(self, d):
+        """Set path to forcefield directory"""
         self.ff = d
         
     def read(self):
@@ -239,6 +240,7 @@ class forceField(boolBase):
             if at.type == n:
                 return at
         # If not found by now, return False
+        # TODO: RAISE ERROR INSTEAD
         return ffAtomType()
         
     def getElement(self, a):
