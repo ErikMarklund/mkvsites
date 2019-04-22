@@ -10,16 +10,19 @@ import itp
 
 # Class for storing the angle constraints.
 class constraint(boolBase):
+    """Class fopr storing the angle constraints"""
     def __init__(self, atoms=[], b0=0.0):
         self.atoms = atoms
         self.b0 = b0
 
     def setConstraint(self, atoms, b0):
+        """Set atom indices and distance"""
         self.atoms = atoms
         self.b0 = b0
 
     # isSame() uses a ~0.01% tolerance because floating point arithmetic.
     def isSame(self, c):
+        """Returns True if and only if indices and distances both match (within 0.01%)"""
         return (
                 (self.i == c.i and self.j == c.j) or \
                 (self.i == c.j and self.j == c.i) \
@@ -27,6 +30,7 @@ class constraint(boolBase):
 
 # Class for storing vsites.
 class vsite(boolBase):
+    """Class for storing and making vsites with dummy atoms"""
     def __init__(self, center='', heavy='', cType='', hType='', nH=0, mDummy=0.0, dDummy=0.0, dDummyHeavy=0.0, name=''):
         self.center = center
         self.heavy  = heavy
@@ -42,27 +46,35 @@ class vsite(boolBase):
         self.name   = name
 
     def set_mDummy(self, m):
+        """Set the mass of dummy atoms"""
         self.mDummy = m
 
     def set_dDummy(self, d):
+        """Set distance between dummy atoms"""
         self.dDummy = d
 
     def set_dDummyHeavy(self, d):
+        """Set distance between dummies and heavy"""
         self.dDummyHeavy = d
 
     def setCenter(self, c):
+        """Set center atom"""
         self.center = c
 
     def setHeavy(self, h):
+        """Set heavy atom"""
         self.heavy = h
 
     def set_nH(self, nH):
+        """Set number of H"""
         self.nH = nH
 
     def setName(self, name):
+        """Set name of vsite"""
         self.name = name
 
     def deriveName(self, ff):
+        """Derive name from center atom and number of H"""
         c = ff.getAtom(self.center)
         if not c:
             self.name = ''
@@ -72,9 +84,11 @@ class vsite(boolBase):
         self.name = 'M{:s}H{:d}_'.format(c.getElement(), self.nH)
 
     def setCType(self, cType):
+        """set center type"""
         self.cType = cType
 
     def setHType(self, hType):
+        """set H type"""
         self.hType = hType
 
     def deriveTypes(self, ff):
@@ -94,6 +108,7 @@ class vsite(boolBase):
 
     # Does not consider nH or name.
     def isSame(self, v):
+        """Are two vsites the same? Based on atoms and distances."""
         return (self.center == v.center and \
                 self.heavy == v.heavy and \
                 self.mDummy == v.mDummy and \
@@ -102,11 +117,13 @@ class vsite(boolBase):
         
 # Atom with neighbours
 class node(boolBase):
+    """Class for handling nodes. A node is a heavy atom and its immediate neighbours"""
     def __init__(self, center='', neighbours=[]):
         self.center = center
         self.neighbours = neighbours
 
     def addCenter(self, center):
+        """Add center atom to node"""
         if type(center) != atom:
             warn('Adding center that is not an atom to node')
             raise(TopologyError)
@@ -114,6 +131,7 @@ class node(boolBase):
             self.center = center
             
     def addNeighbours(self, neighbours):
+        """Add neighbours to node"""
         if neighbours and type(neighbours) == list:
             if type(neighbours[0]):
                 self.neighbours.extend(neighbours)
@@ -125,8 +143,9 @@ class node(boolBase):
             
     # Returns empty constraint in case of any error
     def makeAngleConstraint(self, ff):
-        """Returns constraint(i,j,d), where i and are the atoms
-        and d is the constraint distance."""
+        """Creates and returns constraint(i,j,d), where i and are the atoms
+        and d is the constraint distance.
+        """
         
         # We only do OH angle constraints for now.
         if ff.getElement(self.center) != 'O':
@@ -165,7 +184,9 @@ class node(boolBase):
     
     # Returns empty vsite in case of any error
     def makeVsite(self, ff):
-
+        """Makes and returns a vsite if the node meets the criteria.
+        Returns empty vsite if node fails to meet any criterion
+        """
         v = vsite()
         
         if len(self.neighbours) not in [3, 4]:
@@ -248,27 +269,33 @@ class topology:
         self.vsites = []
 
     def addDirectory(self, d):
+        """Adds a directory to the list of directories"""
         if d not in self.directories:
             self.directories.append(d)
 
     def FFread(self):
+        """Reads the forcefield"""
         try:
             self.ffield.read()
         except FFError:
             warn('No success reading forcefield files in '+path.join([self.gmxPath, self.ffieldName]), bWarn=False)
 
     def setFF(self, ff):
+        """Sets the name of the forcefield"""
         self.ffieldName = ff
 
     def getFF(self):
+        """Returns the name of the forcefield"""
         return self.ffieldName
 
     def finalise(self):
+        """Sets up directory paths, adds force field"""
         self.directories.append(path.join(self.gmxPath, 'top', self.ffieldName))
         self.ffield = ffield.forceField()
         self.ffield.setDirectory(self.directories[-1])
 
     def mol2top(self, r):
+        """Stores the atoms, bonds, and angles from a molecule/residue."""
         self.atoms = r.atoms
         self.bonds = r.bonds
         self.angles = r.angles
@@ -276,7 +303,7 @@ class topology:
         self.makeNodes()
         
     def itpRead(self, fileName='topol.top', bVerbose=False):
-
+        """Reads itp for a molecule and stores the atoms, bonds, and angles."""
         mol = itp.Itp()
 
         for d in self.directories:
@@ -295,7 +322,7 @@ class topology:
 
             
     def rtpRead(self, resName, fileName='aminoacids.rtp', bVerbose=False):
-
+        """Reads specific entry from rtp file and stores the atoms, bonds, and angles."""
         residue = rtp.Rtp()
         
         for d in self.directories:
@@ -314,17 +341,18 @@ class topology:
 
         
     def atomExists(self, aname):
+        """True if atom exists in self.atoms. False if not."""
         for a in self.atoms:
             if aname == a.name:
                 return True
         return False
     
     def addAtom(self, name, type):
+        """Adds the atom to self.atoms:"""
         self.atoms.append(atom(name=name,type=type))
 
     def addBond(self, atoms):
         """Takes list of two atom names as argument"""
-        
         # Do the atoms exist?
         self.bonds.append(bond(atoms=atoms))
         
@@ -333,18 +361,21 @@ class topology:
         self.angles.apend(angle(atoms=atoms))
 
     def getAtom(self, an):
+        """Returns the atom if it exists, None if not"""
         for a in self.atoms:
             if a.name == an:
                 return a
         return None
         
     def getAtomType(self, an):
+        """Gives the atom type for the atom"""
         for a in self.atoms:
             if a.name == an:
                 return a.type
         return ''
     
     def makeNodes(self):
+        """Makes nodes based on the topology data"""
         for a in self.atoms:
             neighbours = []
             for b in self.bonds:
@@ -368,39 +399,46 @@ class topology:
             self.nodes.append(node(center=a, neighbours=neighbours))
         
     def makeAngleConstraints(self):
+        """Derives angle constraints"""
         for a in self.nodes:
             c = a.makeAngleConstraint(self.ffield)
             if c:
                 self.angleConstraints.append(c)
                 
     def makeVsites(self):
+        """Creates vsites for all atoms where applicable"""
         for a in self.nodes:
             v = a.makeVsite(self.ffield)
             if v:
                 self.vsites.append(v)
         
     def dumpAtoms(self):
+        """Print all atoms"""
         output('--- ATOMS ---')
         for a in self.atoms:
             output('{:10s} : {:10s}'.format(a.name, a.type))
 
     def dumpBonds(self):
+        """Print all bonds"""
         output('--- BONDS ---')
         for b in self.bonds:
             output('{:10s} - {:10s}'.format(b.atoms[0], b.atoms[1]))
 
     def dumpAngles(self):
+        """Print all angles"""
         output('--- ANGLES ---')
         for a in self.angles:
             output('{:10s} - {:10s} - {:10s}'.format(a.atoms[0], a.atoms[1], a.atoms[2]))
 
     def dumpAngleConstraints(self):
+        """Print all angle constraints"""
         output('--- ANGLE CONSTRAINTS ---')
         output('{:10s}   {:10s}   {:10s}'.format('i', 'j', 'b0'))
         for a in self.angleConstraints:
             output('{:10s} - {:10s}   {:<10f}'.format(a.atoms[0], a.atoms[1], a.b0))
 
     def dumpVsites(self):
+        """Print all vsites"""
         output('--- VSITES ---')
         output('{:10s}   {:10s}   {:10s}   {:10s}   {:10s}   {:10s}'.format(\
             'Center', 'Heavy', 'mDummy', 'dDD', 'dDHeavy', 'name'))
@@ -409,6 +447,7 @@ class topology:
             v.center, v.heavy, v.mDummy, v.dDummy, v.dDummyHeavy, v.name))
 
     def addNewVsiteType(self, v):
+        """Add a new vsite type if it does not already exist"""
         # Does it already exist?
         for u in self.uniqueVsites:
             if u.DummyConstraint == v.DummyConstraint \
@@ -428,6 +467,7 @@ class topology:
         self.uniqueVsites.append(v)
 
     def identifyVsites(self):
+        """Identify vsite types and add to the cache"""
         self.uniqueVsites = []
 
         for v in self.vsites:
@@ -441,6 +481,7 @@ class topology:
             self.addNewVsiteType(vt)
 
     def dumpVsiteTypes(self):
+        """Print all vsite types"""
         output('### Vsites to add')
         output('# Constraints (ffbonded.itp)')
         for u in self.uniqueVsites:
@@ -454,6 +495,7 @@ class topology:
 
 
 def testRtp():
+    """Function for testing the Rtp class"""
     top = topology()
 
     top.setFF('charmm36.ff')
@@ -471,6 +513,7 @@ def testRtp():
     top.dumpVsites()
 
 def testItp():
+    """Function for testing the Itp class"""
     top = topology()
 
     #top.addDirectory('/Users/erikmarklund/Documents/Projects/detergent/forcefield_files/BDDM_FF_CHARMM36')
@@ -496,6 +539,7 @@ def testItp():
         v.dump()
 
 def testBoth():
+    """Wrapper for testing both Rtp and Itp classes"""
     output('##### Testing rtp reader #####')
     testRtp()
     output('\n##### Testing itp reader #####')

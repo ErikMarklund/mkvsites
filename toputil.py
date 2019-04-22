@@ -52,8 +52,8 @@ class angle(object):
             self.atoms = atoms
 
 
-
 class Cpp():
+    """C-preprocessor wrapper class"""
     def __init__(self, defs=[], exe='cpp', flags='-E -P'):
         self.exe = exe[:]
         self.flags = flags[:]
@@ -71,6 +71,7 @@ class Cpp():
         
 
 def readDirective(s):
+    """Reads a directive line from forcefield, itp, or rtp file."""
     # Remove comments, then split normally
     sline = s.split(';')[0].split()
     
@@ -78,6 +79,3 @@ def readDirective(s):
         return sline[1]
     else:
         return ''
-
-        
-        

@@ -8,6 +8,7 @@ class Rtp(topBase):
         super(Rtp, self).__init__(*args, **kwargs)
         
     def readResidue(self, resName, fileName='aminoacids.rtp'):
+        """Read residue from rtp file and store it"""
         preprocessor = Cpp()
         f = preprocessor.parse(fileName)
         if not f:

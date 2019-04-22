@@ -4,6 +4,7 @@ from os import path
 from sys import stderr
 
 class ffAtom(atom):
+    """Forcefield atom class"""
     def __init__(self, name='', type='', element=''):
         atom.__init__(self, name=name, type=type)
         self.element = ''
@@ -15,6 +16,7 @@ class ffAtom(atom):
         return self.type == a.type
 
 class ffAtomType(boolBase):
+    """Forcefield atom type class"""
     def __init__(self, type='', atnum=0, mass=0, charge=0.0, ptype='', sigma=0.0, epsilon=0.0):
         self.type    = type
         self.atnum   = atnum
@@ -25,6 +27,7 @@ class ffAtomType(boolBase):
         self.epsilon = epsilon
         
     def readFFAtomTypeLine(self, line):
+        """Read forcefield atom type"""
         if readDirective(line):
             raise(FFError)
         
@@ -42,6 +45,7 @@ class ffAtomType(boolBase):
         self.epsilon = float(sline[6])
     
     def getElement(self):
+        """Derive element from atom number"""
         if self.atnum == 1:
             return 'H'
         elif self.atnum == 6:
@@ -59,9 +63,11 @@ class ffAtomType(boolBase):
             return ''
 
     def getMass(self):
+        """Return mass"""
         return self.mass
 
 class ffBondType(boolBase):
+    """Class for bond types"""
     def __init__(self, atom=[], func=0, b0=0.0, kb=0.0):
         self.atom = atom[:]
         self.func = func
@@ -69,6 +75,7 @@ class ffBondType(boolBase):
         self.kb = kb
 
     def readFFBondTypeLine(self, line):
+        """Read forcefield bond type"""
         if readDirective(line):
             raise(FFError)
 
@@ -82,12 +89,14 @@ class ffBondType(boolBase):
         self.kb   = float(sline[4])
 
 class ffConstraintType(boolBase):
+    """Class for constraint types"""
     def __init__(self, atom=[], func=0, b0=0.0):
         self.atom = atom[:]
         self.func = func
         self.b0 = b0
 
     def readFFConstraintTypeLine(self, line):
+        """Read forcefield constraint type"""
         if readDirective(line):
             raise(FFError)
         
@@ -100,6 +109,7 @@ class ffConstraintType(boolBase):
         self.b0   = float(sline[3])
         
 class ffAngleType(boolBase):
+    """Class for angle types"""
     def __init__(self, atom=[], func=0, theta0=0.0, ktheta=0.0, ub0=0.0, kub=0.0):
         self.atom = atom[:]
         self.func = func
@@ -109,6 +119,7 @@ class ffAngleType(boolBase):
         self.kub = kub
         
     def readFFAngleTypeLine(self, line):
+        """Read forcefield angle type"""
         if readDirective(line):
             raise(FFError)
         
@@ -127,6 +138,7 @@ class ffAngleType(boolBase):
 
         
 class forceField(boolBase):
+    """Class for forcefield data"""
     def __init__(self, ff='', bVerbose=False):
         self.ff = ff
         self.atoms = []
@@ -140,6 +152,7 @@ class forceField(boolBase):
         self.ff = d
         
     def read(self):
+        """Read forcefield data"""
         # Read in atomtypes from ffnonbonded.itp
         fname = path.join(self.ff, 'ffnonbonded.itp')
         preprocessor = Cpp()
@@ -221,6 +234,7 @@ class forceField(boolBase):
 
 
     def getAtom(self, n):
+        """Get atom of given type"""
         for at in self.atoms:
             if at.type == n:
                 return at
@@ -228,6 +242,7 @@ class forceField(boolBase):
         return ffAtomType()
         
     def getElement(self, a):
+        """Return element for an atom"""
         for at in self.atoms:
             if at.type == a.type:
                 return at.getElement()
@@ -235,6 +250,7 @@ class forceField(boolBase):
         return ''
 
     def getMass(self, a):
+        """Get mass of an atom"""
         for at in self.atoms:
             if at.type == a.type:
                 return at.getMass()
@@ -242,6 +258,7 @@ class forceField(boolBase):
         return 0.0
 
     def getBond(self, i, j):
+        """Get bond length for two atoms"""
         for b in self.bonds:
             if \
               (b.atom[0] == i and b.atom[1] == j) or \
@@ -252,6 +269,7 @@ class forceField(boolBase):
         return 0.0
 
     def getConstraint(self, i, j):
+        """Get constraint length for two atoms"""
         for c in self.constraints:
             if \
               (c.atom[0] == i and c.atom[1] == j) or \
@@ -262,6 +280,7 @@ class forceField(boolBase):
         return 0.0
     
     def getAngle(self, i, j, k):
+        """Get angle for three atoms"""
         for a in self.angles:
             if a.atom[1] == j and \
               (
@@ -275,7 +294,7 @@ class forceField(boolBase):
         return 0.0
     
     def gatherVsites(self):
-        
+        """Gather vsites. EXPLAIN MORE!"""
         for a in self.atoms:
             if not isDummy(a):
                 continue
@@ -318,7 +337,7 @@ class forceField(boolBase):
 
 
 class ffVsiteType(boolBase):
-
+    """Class for vsite types"""
     def __init__(self, DummyName='', DummyConstraint=0.0, Anchor='', AnchorConstraint=0.0):
         self.DummyName = DummyName
         self.DummyConstraint = DummyConstraint
@@ -327,7 +346,7 @@ class ffVsiteType(boolBase):
 
 
 class ffVsite(boolBase):
-
+    """Class for forcefield vsites"""
     def __init__(self, DummyName='', DummyConstraint=0.0, Anchors=[], AnchorConstraints=[]):
         self.DummyName = DummyName
         self.DummyConstraint = DummyConstraint
@@ -335,9 +354,11 @@ class ffVsite(boolBase):
         self.AnchorConstraints = AnchorConstraints[:]
 
     def setDummyName(self, name):
+        """Set the name of dummies"""
         self.DummyName = name
         
     def setDummyConstraint(self, DummyConstraint):
+        """Set inter-dummy constraint"""
         if self.DummyConstraint:
             warn('Dummy constraint already set.')
             warn('  was: {:f}'.format(self.DummyConstraint), bWarn=False)
@@ -346,6 +367,7 @@ class ffVsite(boolBase):
         self.DummyConstraint = DummyConstraint
 
     def addAnchorConstraint(self, Anchor, AnchorConstraint):
+        """Set dymmy-anchor constraints"""
         if Anchor not in self.Anchors:
             self.Anchors.append(Anchor)
             self.AnchorConstraints.append(AnchorConstraint)
@@ -354,9 +376,11 @@ class ffVsite(boolBase):
             raise FFError
 
     def isComplete(self):
+        """Checks if a vsite is complete"""
         return self.DummyName and self.DummyConstraint and self.AnchorConstraints
 
     def dump(self, o=stdout):
+        """Prints a vsite to stdout (or other stream)"""
         output('Name:            {:s}'.format(self.DummyName), ostream=o)
         output('DummyConstraint: {:f}'.format(self.DummyConstraint), ostream=o)
         for a, c in zip(self.Anchors, self.AnchorConstraints):
@@ -378,4 +402,5 @@ class ffVsite(boolBase):
 
         
 def isDummy(a):
+    """True if atom is a dummy atom. False otherwise."""
     return (a.mass == 0 and a.atnum == 0 and a.charge == 0.0 and a.sigma == 0.0 and a.epsilon == 0.0)

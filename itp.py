@@ -8,6 +8,7 @@ class Itp(topBase):
        super(Itp, self).__init__(*args, **kwargs)
 
     def read(self, fileName):
+        """Read itp file"""
         preprocessor = Cpp()
         f = preprocessor.parse(fileName)
         if not f:
