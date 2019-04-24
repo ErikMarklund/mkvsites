@@ -48,13 +48,20 @@ if __name__ == '__main__':
 
         if ext in [ '.itp', '.top' ] :
             output('Input is {:s} file'.format(ext.lstrip('.')), bPrint=bVerbose)
-            t.itpRead(fileName=topfile, bVerbose=bVerbose)
+            try:
+                t.itpRead(fileName=topfile, bVerbose=bVerbose)
+            except TopologyError:
+                warn('Incomplete reading of {:s}. Faulty topology?'.format(topfile), bError=True)
+                raise TopologyError
 
         elif ext == '.rtp':
             output('Input is rtp file', bPrint=bVerbose)
             if not res:
                 parser.error('Need to provide residue name with rtp files (-res).')
-            t.rtpRead(res, fileName=topfile, bVerbose=bVerbose)
+            try:
+                t.rtpRead(res, fileName=topfile, bVerbose=bVerbose)
+            except TopologyError:
+                warn('Incomplete reading of {:s}. Faulty rtp-file?'.format(res), bError=True)
 
         else:
             parser.error('Unsupported file type: {:s}'.format(topbase))
