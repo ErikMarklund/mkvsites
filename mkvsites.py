@@ -68,6 +68,18 @@ if __name__ == '__main__':
 
         output('Will find vsites and angle constraints for {:s} dressed in the forcefield {:s}'.format(topfile, ff))
         t.FFread()
+        aliens = t.spotAlienAtoms()
+        if aliens:
+            output("\n= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =", ostream=stderr)
+            warn("The following atoms are not found in the force field,\n" \
+                     "and will thus not be considered for vsites or angle constraints.\n" \
+                     "Perhaps derive_params.py can help.\n")
+            output("{:8s}{:8s}".format("Name", "Type"), ostream=stderr)
+            output("------------", ostream=stderr)
+            for a in aliens:
+                a.dump(ostream=stderr)
+            output("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n", ostream=stderr)
+
         t.makeAngleConstraints()
         t.makeVsites()
 

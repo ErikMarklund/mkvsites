@@ -379,9 +379,21 @@ class topology:
                     continue
 
             self.nodes.append(node(center=a, neighbours=neighbours))
-        
+
+    def spotAlienAtoms(self):
+        """Checks if all atoms are described by the forcefield"""
+        for n in self.nodes:
+            A = [n.center] + n.neighbours
+            aliens = []
+            for a in A:
+                if not self.ffield.getAtom(a.type):
+                    aliens.append(a)
+
+        return aliens
+
     def makeAngleConstraints(self):
         """Derives angle constraints"""
+
         for a in self.nodes:
             c = a.makeAngleConstraint(self.ffield)
             if c:

@@ -28,6 +28,9 @@ class atom(object):
 
     def isSameType(self, atom):
         return self.type == atom.type
+
+    def dump(self, ostream=stdout):
+        output("{:8s}{:8s}".format(self.name, self.type), ostream=ostream)
     
 
 class bond(object):
