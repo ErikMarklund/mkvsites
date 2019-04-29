@@ -182,7 +182,7 @@ class node(boolBase):
         return constraint([self.neighbours[Heavy].type, self.neighbours[H].type], d)
 
     
-    # Returns empty vsite in case of any error
+    # Returns empty vsite in case of any error.
     def makeVsite(self, ff):
         """Makes and returns a vsite if the node meets the criteria.
         Returns empty vsite if node fails to meet any criterion
@@ -427,9 +427,9 @@ class topology:
     def dumpAngleConstraints(self):
         """Print all angle constraints"""
         output('--- ANGLE CONSTRAINTS ---')
-        output('{:10s}   {:10s}   {:10s}'.format('i', 'j', 'b0'))
+        output('{:10s}  {:10s}  {:10s}'.format('i', 'j', 'b0'))
         for a in self.angleConstraints:
-            output('{:10s} - {:10s}   {:<10f}'.format(a.atoms[0], a.atoms[1], a.b0))
+            output('{:10s}  {:10s}  {:<10f}'.format(a.atoms[0], a.atoms[1], a.b0))
 
     def dumpVsites(self):
         """Print all vsites"""
@@ -476,7 +476,7 @@ class topology:
 
     def dumpVsiteTypes(self):
         """Print all vsite types"""
-        output('### Vsites to add')
+        output('### Vsite data to add to forcefield')
         output('# Constraints (ffbonded.itp)')
         for u in self.uniqueVsites:
             output('{:8s}{:8s} 2    {:8.6f}'.format(u.DummyName, u.DummyName, u.DummyConstraint))
@@ -486,6 +486,13 @@ class topology:
         for u in self.uniqueVsites:
             output('{:8s}0   0.000000    0.00    A   0.0 0.0'.format(u.DummyName))
 
+        output('# Dummy masses (atomtypes.itp)')
+        for u in self.uniqueVsites:
+            output('{:8s}  0.00000'.format(u.DummyName))
+
+        output('# Add to the .vsd file under the appropriate group')
+        for v in self.vsites:
+            output('{:8s}{:8s}{:8s}'.format(v.center, v.heavy, v.name))
 
 
 def testRtp():

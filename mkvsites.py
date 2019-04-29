@@ -82,10 +82,16 @@ if __name__ == '__main__':
 
         t.makeAngleConstraints()
         t.makeVsites()
+        t.identifyVsites()
+        output('***********************')
+        t.ffield.gatherVsites()
+        for i, v in enumerate(t.ffield.vsites):
+            output('Vsite {:d}:'.format(i))
+            v.dump()
+        output('***********************')
 
         if bVerbose:
             t.dumpAngleConstraints()
             t.dumpVsites()
 
-        t.identifyVsites()
         t.dumpVsiteTypes()
