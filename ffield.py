@@ -147,6 +147,7 @@ class forceField(boolBase):
         self.angles = []
         self.vsites = []
         self.bVerbose = bVerbose
+        self.uniqueVsites = []
 
     def setPath(self, d):
         """Set path to forcefield directory"""
@@ -344,12 +345,22 @@ class forceField(boolBase):
 
 class ffVsiteType(boolBase):
     """Class for vsite types"""
-    def __init__(self, DummyName='', DummyConstraint=0.0, Anchor='', AnchorConstraint=0.0):
+    def __init__(self, DummyName='', DummyConstraint=0.0, Anchor='', AnchorConstraint=0.0, Center=''):
         self.DummyName = DummyName
         self.DummyConstraint = DummyConstraint
         self.Anchor = Anchor
         self.AnchorConstraint = AnchorConstraint
+        self.Center = Center
 
+    def getDummyName(self):
+        return self.DummyName
+
+    def dump(self, ostream=stdout):
+        output('DummyName        {:10s}'.format(self.DummyName), ostream=ostream)
+        output('DummyConstraint  {:<10.6f}'.format(self.DummyConstraint), ostream=ostream)
+        output('Anchor           {:10s}'.format(self.Anchor), ostream=ostream)
+        output('AnchorConstraint {:<10.6f}'.format(self.AnchorConstraint), ostream=ostream)
+        output('Center           {:10s}'.format(self.Center), ostream=ostream)
 
 class ffVsite(boolBase):
     """Class for forcefield vsites"""
@@ -362,6 +373,10 @@ class ffVsite(boolBase):
     def setDummyName(self, name):
         """Set the name of dummies"""
         self.DummyName = name
+
+    def getDummyName(self):
+        """Get the name of the dummies"""
+        return self.DummyName
         
     def setDummyConstraint(self, DummyConstraint):
         """Set inter-dummy constraint"""
@@ -395,7 +410,9 @@ class ffVsite(boolBase):
     def getVsiteType(self, v):
         """Takes a topology.vsite and compares with self."""
         # Allow 1% discrepancy (Order of 1/100 A)
-        if abs(v.dDD-self.DummyConstraint)/self.DummyConstraint > 0.01:
+        if (abs(v.dDD-self.DummyConstraint)/self.DummyConstraint > 0.01 or \
+            v.Center != self.Center or \
+            v.Anchor != self.Anchor):
             return None
 
         for a, ac in zip(self.Anchors, self.AnchorConstraints):

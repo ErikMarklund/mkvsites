@@ -31,11 +31,11 @@ class constraint(boolBase):
 # Class for storing vsites.
 class vsite(boolBase):
     """Class for storing and making vsites with dummy atoms"""
-    def __init__(self, center='', heavy='', cType='', hType='', nH=0, mDummy=0.0, dDummy=0.0, dDummyHeavy=0.0, name=''):
+    def __init__(self, center='', heavy='', cName='', hName='', nH=0, mDummy=0.0, dDummy=0.0, dDummyHeavy=0.0, name=''):
         self.center = center
         self.heavy  = heavy
-        self.centerType = cType
-        self.heavyType = hType
+        self.centerName = cName
+        self.heavyName = hName
         self.nH     = nH
         # Mass of a single dummy mass
         self.mDummy = mDummy
@@ -83,29 +83,6 @@ class vsite(boolBase):
         # We give a name based on center and nH, with trailing underscore to distinguish from existing vsites.
         self.name = 'M{:s}H{:d}_'.format(c.getElement(), self.nH)
 
-    def setCType(self, cType):
-        """set center type"""
-        self.cType = cType
-
-    def setHType(self, hType):
-        """set H type"""
-        self.hType = hType
-
-    def deriveTypes(self, ff):
-        """Derives atom types for center and heavy"""
-        c = getAtom(self.center)
-        if c:
-            self.setCType(c.type)
-        else:
-            self.setCType('')
-
-        h = getAtom(self.heavy)
-        if h:
-            self.setHType(h.type)
-        else:
-            self.setHType('')
-
-
     # Does not consider nH or name.
     def isSame(self, v):
         """Are two vsites the same? Based on atoms and distances."""
@@ -114,7 +91,19 @@ class vsite(boolBase):
                 self.mDummy == v.mDummy and \
                 abs(self.dDummy-v.dDummy) < 0.00001 and \
                 abs(self.dDummyHeavy-v.dDummyHeavy) < 0.00001)
-        
+
+    def dump(self, ostream=stdout):
+        """Prints the vsite to stream"""
+        output('+ + + + {:8s} vsite + + + +'.format(self.name))
+        output('center       {:10s}'.format(self.center), ostream=ostream)
+        output('centerName   {:10s}'.format(self.centerName), ostream=ostream)
+        output('heavy        {:10s}'.format(self.heavy), ostream=ostream)
+        output('heavyName    {:10s}'.format(self.heavyName), ostream=ostream)
+        output('nH           {:<10d}'.format(self.nH), ostream=ostream)
+        output('mDummy       {:<10.6}'.format(self.mDummy), ostream=ostream)
+        output('dDummy       {:<10.6}'.format(self.dDummy), ostream=ostream)
+        output('dDummyHeavy  {:<10.6}'.format(self.dDummyHeavy), ostream=ostream)
+
 # Atom with neighbours
 class node(boolBase):
     """Class for handling nodes. A node is a heavy atom and its immediate neighbours"""
@@ -458,21 +447,49 @@ class topology:
 
             v.DummyName = v.DummyName+str(i)
 
+        output('Adding vsite type {:8s}'.format(v.DummyName))
         self.uniqueVsites.append(v)
 
+    def getVsiteType(self, v):
+        """ """
+        for uv in self.uniqueVsites:
+            # Allow 1% discrepancy (Order of 1/100 A)
+            if (abs(v.dDummy-uv.DummyConstraint)/uv.DummyConstraint > 0.01 or \
+                    abs(v.dDummyHeavy-uv.AnchorConstraint)/uv.AnchorConstraint > 0.01 or \
+                v.center != uv.Center or \
+                v.heavy != uv.Anchor):
+                continue
+
+            return uv
+
+        return None
+
     def identifyVsites(self):
-        """Identify vsite types and add to the cache"""
+        """Identify vsite types and rename vsites in topology"""
         self.uniqueVsites = []
 
         for v in self.vsites:
-            vt = self.ffield.getVsiteType(v)
+            vt = self.getVsiteType(v)
             if not vt:
                 vt = ffield.ffVsiteType(DummyName=v.name,
-                                     DummyConstraint=v.dDummy,
-                                     Anchor=v.heavy,
-                                     AnchorConstraint=v.dDummyHeavy)
+                                        DummyConstraint=v.dDummy,
+                                        Anchor=v.heavy,
+                                        AnchorConstraint=v.dDummyHeavy,
+                                        Center=v.center)
 
             self.addNewVsiteType(vt)
+
+        for v in self.vsites:
+            vt = self.getVsiteType(v)
+            if not vt:
+                warn('Encountered unknown vsite type', bError=True, ostream=stderr)
+                v.dump()
+                output('{:8d} Known vsite types:'.format(len(self.uniqueVsites)), ostream=stderr)
+                for uv in self.uniqueVsites:
+                    uv.dump()
+                raise TopologyError
+
+            v.setName(vt.getDummyName())
 
     def dumpVsiteTypes(self):
         """Print all vsite types"""
