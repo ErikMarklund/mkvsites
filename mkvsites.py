@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 from math import *
 from sys import exit
 import topology as top
+from toputil import *
 from os import path
 from basics import *
 import argparse
@@ -18,6 +20,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Calculates missing constraints for virtual-site constructions.")
     parser.add_argument('-ff', '--force-field', action='store', nargs=1, type=str, required=True, metavar='FF', dest='ff', help='Path to force field.')
     parser.add_argument('-res', '--residue', action='store', nargs=1, type=str, metavar='RES', dest='res', help='Residue name, rtp files only.')
+    parser.add_argument('-ro', '--rtp-out', action='store', nargs=1, type=str, metavar='mymol.rtp', dest='ro', help='RTP output (for itp/top input). Enables vsite and dummy construction using pdb2gmx.')
     parser.add_argument('-v', '--verbose', action='store_true', help='Be loud and noisy')
     parser.add_argument('-ver', '--version', action='store_true', help='Print version')
     parser.add_argument('file', action='store', nargs=1, type=str, help='itp or rtp file')
@@ -39,6 +42,11 @@ if __name__ == '__main__':
         res = None
     topfile = args.file[0]
 
+    if args.ro:
+        rofile = args.ro[0]
+    else:
+        rofile = None
+
     t.setFF(ff)
     
     if topfile:
@@ -58,6 +66,8 @@ if __name__ == '__main__':
             output('Input is rtp file', bPrint=bVerbose)
             if not res:
                 parser.error('Need to provide residue name with rtp files (-res).')
+            if rofile:
+                parser.error('RTP output (-ro) only makes sense for itp/top input.')
             try:
                 t.rtpRead(res, fileName=topfile, bVerbose=bVerbose)
             except TopologyError:
@@ -95,3 +105,8 @@ if __name__ == '__main__':
             t.dumpVsites()
 
         t.dumpVsiteTypes()
+
+
+        if rofile:
+            # Dump RTP file too
+            t.rtpWriteFile(rofile, bVerbose=bVerbose)

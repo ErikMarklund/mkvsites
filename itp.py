@@ -43,13 +43,18 @@ class Itp(topBase):
 
                     atype = sline[1]
                     aname = sline[4]
+                    cgnr  = int(sline[5])
+                    q     = float(sline[6])
 
-                    if not (aname and atype):
-                        warn('Could not derive name/type of atom:', bError=True)
+                    if not (aname and atype and cgnr and q!=None):
+                        warn('Could not derive name/type/cgnr/q of atom:', bError=True)
                         warn(line, bWarn=False)
+                        warn('aname: '+aname, bWarn=False)
+                        warn('cgnr: {:d}'.format(cgnr), bWarn=False)
+                        warn('q: {:f}'.format(q), bWarn=False)
                         raise(ItpError)
 
-                    self.atoms.append(atom(name=aname, type=atype))
+                    self.atoms.append(atom(name=aname, type=atype, q=q, cgnr=cgnr))
 
                 elif readType == 'bonds':
                     if len(sline) < 3:
@@ -60,8 +65,9 @@ class Itp(topBase):
                     atomIndices = [int(i)-1 for i in sline[0:2]]
 
                     atoms = [self.atoms[i].name for i in atomIndices]
-
-                    self.bonds.append(bond(atoms=atoms))
+                    ftype = int(sline[2])
+                    params = sline[3:]
+                    self.bonds.append(bond(atoms=atoms, ftype=ftype, params=params))
 
                 elif readType == 'angles':
                     if len(sline) < 4:
@@ -72,8 +78,25 @@ class Itp(topBase):
                     atomIndices = [int(i)-1 for i in sline[0:3]]
 
                     atoms = [self.atoms[i].name for i in atomIndices]
+                    ftype = int(sline[3])
+                    params = sline[4:]
+                    self.angles.append(angle(atoms=atoms, ftype=ftype, params=params))
 
-                    self.angles.append(angle(atoms=atoms))
+                elif readType == 'dihedrals':
+                    if len(sline) < 5:
+                        warn('Ill-formated dihedral line in '+fileName+':', bError=True)
+                        warn(line, bWarn=False)
+                        raise(ItpError)
+
+                    atomIndices = [int(i)-1 for i in sline[0:4]]
+
+                    atoms = [self.atoms[i].name for i in atomIndices]
+                    ftype = int(sline[4])
+                    params = sline[5:]
+                    if ftype in (2,4):
+                        self.impropers.append(dihedral(atoms=atoms, ftype=ftype, params=params))
+                    else:
+                        self.dihedrals.append(dihedral(atoms=atoms, ftype=ftype, params=params))
 
                 else:
                     # Irrelevant directive

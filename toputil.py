@@ -5,6 +5,8 @@ class TopologyError(Exception):
     pass
 class RtpError(Exception):
     pass
+class ItpError(Exception):
+    pass
 class FFError(Exception):
     pass
 
@@ -12,19 +14,23 @@ class FFError(Exception):
 class topBase(boolBase):
     """Base class for itp and rtp"""
 
-    def __init__(self, name='', atoms=[], bonds=[], angles=[]):
+    def __init__(self, name='', atoms=[], bonds=[], angles=[], dihedrals=[], impropers=[]):
         self.name = ''
         self.atoms = atoms[:]
         self.bonds = bonds[:]
         self.angles = angles[:]
+        self.dihedrals = dihedrals[:]
+        self.impropers = impropers[:]
 
         
 class atom(object):
     """Atom class"""
     
-    def __init__(self, name='', type=''):
+    def __init__(self, name='', type='', q=0.0, cgnr=0):
         self.name = name
         self.type = type
+        self.q = q
+        self.cgnr = cgnr
 
     def isSameType(self, atom):
         return self.type == atom.type
@@ -36,24 +42,40 @@ class atom(object):
 class bond(object):
     """Bond class"""
 
-    def __init__(self, atoms=[]):
+    def __init__(self, atoms=[], ftype=0, params=[]):
         if len(atoms) != 0 and len(atoms) != 2:
             raise(TopologyError)
         
         else:
-            self.atoms = atoms
+            self.atoms  = atoms
+            self.ftype  = ftype
+            self.params = params
 
 
 class angle(object):
     """Angle class"""
 
-    def __init__(self, atoms=[]):
+    def __init__(self, atoms=[], ftype=0, params=[]):
         if len(atoms) !=0 and len(atoms) != 3:
             raise(TopologyError)
         
         else:
-            self.atoms = atoms
+            self.atoms  = atoms
+            self.ftype  = ftype
+            self.params = params
 
+
+class dihedral(object):
+    """Dihedral class. Also used for impropers."""
+
+    def __init__(self, atoms=[], ftype=0, params=[]):
+        if len(atoms) !=0 and len(atoms) != 4:
+            raise(TopologyError)
+
+        else:
+            self.atoms  = atoms
+            self.ftype  = ftype
+            self.params = params
 
 class Cpp():
     """C-preprocessor wrapper class"""
