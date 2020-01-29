@@ -40,3 +40,12 @@ def output(s, bEndline=True, ostream=stdout, bPrint=True):
         s += '\n'
 
     ostream.write(s)
+
+
+def cite_mkvsites():
+    """Returns a string with citataion info"""
+    s = 'Per Larsson, Rosita Carolina Kneisz, Erik G Marklund\n' \
+      + 'MkVsites: A general-purpose python tool to increase\n' \
+      + 'performance  in  all-atom  molecular  dynamics simulations\n' \
+      + 'Journal X(XX):XXX--XXXX.'
+    return s
