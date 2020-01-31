@@ -76,36 +76,35 @@ class Rtp(topBase):
 
                 # Read bonds
                 elif readType == 'bonds':
-                    if len(sline) != 2:
-                        if directive:
-                            if directive == 'angles':
-                                readType = directive
-                                continue
-                            else:
-                                warn('Unexpected directive:', bError=True)
-                                warn(line, bWarn=False)
-                                raise(RtpError)
+                    if directive:
+                        if directive == 'angles':
+                            readType = directive
+                            continue
+                        else:
+                            warn('Unexpected directive:', bError=True)
+                            warn(line, bWarn=False)
+                            raise(RtpError)
 
-                        warn('Ill-formatted bond on line {:d}:'.format(lineNo))
-                        warn(line, bWarn=False)
+                        if len(sline) < 2:
+                            warn('Ill-formatted bond on line {:d}:'.format(lineNo))
+                            warn(line, bWarn=False)
 
-                    anames = sline[:]
+                    anames = sline[:2]
                     self.bonds.append(bond(atoms=anames))
 
                 elif readType == 'angles':
-                    if len(sline) != 3:
+                    if directive:
                         if directive:
-                            if directive:
-                                readType = 'Done' # or whatever
-                                continue
-                            else:
-                                warn('Unexpected directive', bError=True)
-                                raise(RtpError)
-
+                            readType = 'Done' # or whatever
+                            continue
+                        else:
+                            warn('Unexpected directive', bError=True)
+                            raise(RtpError)
+                    if len(sline) < 3:
                         warn('Ill-formatted angle on line {:d}:'.format(lineNo))
                         warn(line, bWarn=False)
 
-                    anames = sline[:]
+                    anames = sline[:3]
                     self.angles.append(angle(atoms=anames))
 
                 else:
