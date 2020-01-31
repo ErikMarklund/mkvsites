@@ -458,9 +458,9 @@ class topology:
 
     def spotAlienAtoms(self):
         """Checks if all atoms are described by the forcefield"""
+        aliens = []
         for n in self.nodes:
             A = [n.center] + n.neighbours
-            aliens = []
             for a in A:
                 if not self.ffield.getAtom(a.type):
                     aliens.append(a)
