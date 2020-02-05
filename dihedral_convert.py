@@ -216,6 +216,18 @@ class fdihedral(cdihedral):
 
     def make_propermultiple(self):
         PD = []
+
+        # If all coefficients are zero, just output a single flat dihedral to make grompp happy
+        bFlat = True
+        for f in self.F:
+            if f != 0.0:
+                bFlat = False
+                break
+
+        if bFlat:
+            pd = pmdihedral(atoms=self.atoms, k=0.0, phi=0.0, m=1)
+            return [pd]
+
         for i,f in enumerate(self.F):
             if f == 0.0:
                 continue
@@ -229,7 +241,7 @@ class fdihedral(cdihedral):
                 inv = 1
 
             k = 0.5*f*inv
-            phi = 0
+            phi = 0.0
             pd = pmdihedral(atoms=self.atoms, k=k, phi=phi, m=m)
             PD.append(pd)
 
