@@ -95,13 +95,14 @@ if __name__ == '__main__':
         t.identifyVsites()
         output('***********************')
         t.ffield.gatherVsites()
+        output('*** Dummy-atom constructs in force field')
         for i, v in enumerate(t.ffield.vsites):
             output('Vsite {:d}:'.format(i))
             v.dump()
         output('***********************')
 
         if bVerbose:
-            t.dumpAngleConstraints()
+            #t.dumpAngleConstraints()
             t.dumpVsites()
 
         t.dumpVsiteTypes()

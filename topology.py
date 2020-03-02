@@ -500,12 +500,16 @@ class topology:
         for a in self.angles:
             output('{:10s} - {:10s} - {:10s}'.format(a.atoms[0], a.atoms[1], a.atoms[2]))
 
-    def dumpAngleConstraints(self):
+    def dumpAngleConstraints(self, bHeadline=False):
         """Print all angle constraints"""
-        output('--- ANGLE CONSTRAINTS ---')
-        output('{:10s}  {:10s}  {:10s}'.format('i', 'j', 'b0'))
+        #output('--- ANGLE CONSTRAINTS ---')
+        #output('{:10s}  {:10s}  {:10s}'.format('i', 'j', 'b0'))
+        if bHeadline:
+            output(' ANGLE CONSTRAINTS ')
+
         for a in self.angleConstraints:
-            output('{:10s}  {:10s}  {:<10f}'.format(a.atoms[0], a.atoms[1], a.b0))
+            output('{:8s}{:8s} 2    {:8.6f}'.format(a.atoms[0], a.atoms[1], a.b0))
+
 
     def dumpVsites(self):
         """Print all vsites"""
@@ -585,6 +589,10 @@ class topology:
         for u in self.uniqueVsites:
             output('{:8s}{:8s} 2    {:8.6f}'.format(u.DummyName, u.DummyName, u.DummyConstraint))
             output('{:8s}{:8s} 2    {:8.6f}'.format(u.DummyName, u.Anchor, u.AnchorConstraint))
+
+        if self.angleConstraints:
+            output('# Angle constraints (ffbonded.itp)')
+            self.dumpAngleConstraints()
 
         output('# Dummy masses (ffnonbonded.itp)')
         for u in self.uniqueVsites:
