@@ -1,0 +1,183 @@
+Here, we will generate the virtual site parameters and angle
+constraints required for simulating an estrogen molecules with a 5-fs
+time step. In fact, the input files were used for our publication
+Larsson et al. (20XX) XXXXX XX:XXX--XXX. This is a relatively complex
+example that require the addition of new atom types and their
+interactions, new dummy-mass atom types and associated parameters for
+virtual site constructions, and angle constraints for -OH groups. To
+make use of the native machinery in pdb2gmx for inserting dummy atoms
+etc we create an rtp file from the estrogen topology file using
+derive_params.py. The necessary files EST.top and EST.pdb are both
+available in the EST folder.
+
+
+1. MAKING A WORKING COPY OF THE FORCE FIELD
+
+1.1 We first make a copy of the force field directory just in case we make a mistake.
+
+  cp -R $GMXDATA/top/amber99sb-ildn.ff $GMXDATA/top/amber99sb-ildn-EST.ff
+
+
+1.2 It is advisable to edit the description in forcefield.doc in the
+new force field folder to distinguish it from the unaltered force
+field when running pdb2gmx.
+
+
+2. GETTING NEW ATOM TYPES AND INTERACTIONS
+
+Since the hormone is made of atom types that are not present in the
+force field we need to extract those atom types and their interaction
+parameters, and add them to the force field files. We also add an rtp
+file for our ligand to make sure pdb2gmx can generate all virtual site
+constructions from our parameters, add dummy atoms in the right place,
+etc.
+
+
+2.1 Run python derive_params.py -r EST.rtp -rd -m EST.top
+
+This will produce a list of the atom types and their interaction
+types. The -r option will create the rtp-file EST.rtp based on the
+contents in EST.itp, and with -rd the dihedral parameters will be
+present in the rtp-file. The -m option will however replace the
+complete dihedral parameters with macros, defined in the associated
+file EST_macros.txt (filename derived from the rtp-output name). We do
+the latter since grompp is quite limited in how long lines it can read
+from a topology file, and a macro name is much shorter than up to 12
+consecutive parameters in a row.
+
+
+2.2 Copy the bonds and angles to their respective sections of ffbonded.itp.
+
+The angle and dihedral output should fit the force field files without
+modification. Note that we do not transfer dihedrals at this point,
+since the parameters are present in the rtp-file that we have
+created. They will enter the topology at the pdb2gmx stage. When using
+rtp input, this is a safer way than to include dihedrals in the force
+field, since some dihedrals have the same atom types but different
+parameters (see e.g. different aminoacid side chains in some
+biological force fields).
+
+
+2.3 Copy the rtp-file to the force field and the macro definitions to ffbonded.itp
+
+cp EST.rtp $GMXDATA/top/amber99sb-ildn-EST.ff
+cat EST_macros.txt >> $GMXDATA/top/amber99sb-ildn-EST.ff/ffbonded.itp
+
+
+2.4 Copy the new atom types to atomtypes.atp and ffnonbonded.itp.
+
+The atom types and non-bonded parameters require a little editing
+however. First, all the atom types in EST.top have zero mass, so we
+need to change that before adding them to atomtypes.atp. Note that
+most of the information is not relevant for atomtypes.atp. We add the
+following to atomtypes.atp:
+
+
+  ca       12.01000
+  ha        1.00800
+  oh       16.00000
+  ho        1.00800
+  c3       12.01000
+  hc        1.00800
+  h1        1.00800
+
+Similarly, the atom numbers is undefined for the new atom types, but
+are required for ffnonbonded.itp. Hence, we change the second column
+in the output to the atom numbers. We also need to set the masses
+right in the third column.
+
+h1           1      1.0080  0.0000  A   2.47135e-01  6.56888e-02
+c3           6     12.0100  0.0000  A   3.39967e-01  4.57730e-01
+hc           1      1.0080  0.0000  A   2.64953e-01  6.56888e-02
+oh           8     16.0000  0.0000  A   3.06647e-01  8.80314e-01
+ha           1      1.0080  0.0000  A   2.59964e-01  6.27600e-02
+ca           6     12.0100  0.0000  A   3.39967e-01  3.59824e-01
+ho           1      1.0080  0.0000  A   0.00000e+00  0.00000e+00
+
+
+2.5 Having set the atom numbers, we add the following to
+ffnonbonded.itp:
+
+  ca       6          12.01000  0.00000   A     3.39967e-01   3.59824e-01
+  ha       1           1.00800  0.00000   A     2.59964e-01   6.27600e-02
+  oh       8          16.00000  0.00000   A     3.06647e-01   8.80314e-01
+  ho       1           1.00800  0.00000   A     0.00000e+00   0.00000e+00
+  c3       6          12.01000  0.00000   A     3.39967e-01   4.57730e-01
+  hc       1           1.00800  0.00000   A     2.64953e-01   6.56888e-02
+  h1       1           1.00800  0.00000   A     2.47135e-01   6.56888e-02
+
+3. GENERATING VIRTUAL SITE PARAMETERS AND ANGLE CONSTRAINTS
+
+3.1 We can now run mkvsites.py to get the missing parameters:
+
+  python <path-to>/mkvsites.py \
+    -ff $GMXDATA/top/amber99sb-ildn.ff \
+    -res EST \
+    $GMXDATA/top/amber99sb-ildn.ff/EST.rtp
+
+which will generate the following output:
+
+  ### Vsite data to add to forcefield
+  # Constraints (ffbonded.itp)
+  MCH3_1  MCH3_1   2    0.092573
+  MCH3_1  c3       2    0.167737
+  # Angle constraints (ffbonded.itp)
+  ca      ho       2    0.191101
+  c3      ho       2    0.194790
+  # Dummy masses (ffnonbonded.itp)
+  MCH3_1  0   0.000000    0.00    A   0.0 0.0
+  # Dummy masses (atomtypes.itp)
+  MCH3_1    0.00000
+  # Add to the .vsd file under the appropriate group
+  c3      c3      MCH3_1
+
+mkvsites.py finds the need for a new dummy atom type MCH3_1. Two such
+dummy atoms will be connected to a c3 atom to make a virtual site
+construction for a methyl group comprise of one central c3 atom and
+three hydrogens.
+
+This new dummy-atom construction does not exactly match constructs already
+present in the force field (compare with the preceeding output
+"Dummy-atom constructs in force field"), so we must add all parameters
+and the new dummy atom to the force field. Note that we can name the
+new dummy atom any way we want, but for pedagogical purposes we stick
+with the suggested name.
+
+
+3.2 Add the following constraints to the [ constraints ] section of ffbonded.itp:
+
+  MCH3_1  MCH3_1   2    0.092573
+  MCH3_1  c3       2    0.167737
+  ca      ho       2    0.191101
+  c3      ho       2    0.194790
+
+The first two constraints connect dummy atoms with each other and with
+the anchoring c3 atom. The last two constraints keep hydroxyl angles
+constant, since these would otherwise yield too fast oscillations for
+a 5-fs timestep.
+
+
+3.3 Add the new dummy atom to atomtypes.itp
+
+  MCH3_1    0.00000
+
+
+3.5 Add the new dummy atom to ffnonbonded.itp
+  MCH3_1  0   0.000000    0.00    A   0.0 0.0
+
+Here, a zero mass is in fact correct.
+
+
+3.5 Add to the following to aminoacids.vsd file in the [ CH3 ] section:
+
+  c3      c3      MCH3_1
+
+This will instruct pdb2gmx to make MCH3_1 dummy atoms for any c3-centered
+methyl groups connected to a c3 anchor.
+
+
+5. Run gmx pdb2gmx -f ... -vsite hydrogens, selecting your newly
+edited force field, followed by editconf and other commands to prepare
+your system. You will now be able to simulate estrogen using a 5 fs
+time step. Just remember to use constraints to remove even faster
+degrees of freedom.

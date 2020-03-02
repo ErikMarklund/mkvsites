@@ -1,0 +1,46 @@
+The DNA nucleotide thymine (DT) contains a methyl group that is not covered by existing virtual site parameters in the abmer99sb-ildn force field in Gromacs. DT is however otherwise fully described by the force field and even has an rtp entry. We can use the rtp files to generate the missing parameters and have no need for an itp file. Here, we assume we have set up our session to use a specific Gromacs installation using 'source <path-to-gromacs>/bin/GMXRC.bash' or similar.
+
+1. We first make a copy of the force field directory just in case we make a mistake.
+
+  cp -R $GMXDATA/top/amber99sb-ildn.ff $GMXDATA/top/amber99sb-ildn-DT.ff
+
+2. It is advisable to edit the description in forcefield.doc in the new force field folder to distinguish it from the unaltered force field when running pdb2gmx.
+
+3. We can now run mkvsites.py to get the missing parameters:
+
+  python <path-to>/mkvsites.py \
+    -ff $GMXDATA/top/amber99sb-ildn.ff \
+    -res DT \
+    $GMXDATA/top/amber99sb-ildn.ff/dna.rtp
+
+which will generate the following output:
+
+...
+### Vsite data to add to forcefield
+# Constraints (ffbonded.itp)
+MCH3_1  MCH3_1   2    0.092163
+MCH3_1  CM       2    0.164889
+# Dummy masses (ffnonbonded.itp)
+MCH3_1  0   0.000000    0.00    A   0.0 0.0
+# Dummy masses (atomtypes.atp)
+MCH3_1    0.00000
+# Add to the .vsd file under the appropriate group
+CT      CM      MCH3_1
+
+mkvsites.py finds the need for a new dummy atom type MCH3_1. Two such dummy atoms will be connected to a CM atom to make a virtual site construction for a methyl group comprise of aone CT and three hydrogens.
+
+Looking at the constraints for MCH3_1 we find that the dummy-dummy constraint mathces the existing MCH3 dummy atoms, and we can thus use that instead of introducing a brand new dummy atom type. In fact, looking in aminoacids.vsd, this construction is already listed:
+
+[ CH3 ]
+...
+CT           CM              MCH3
+
+Since the dummy atom already exists we do not need to edit atomtypes.atp ffnonbonded.itp, or aminoacids.vsd (which currently is the vsite database file for all types of residues, not just aminoacids). We also do not need to add the dummy-dummy constraint to ffbonded.itp. In fact, all we need to do is to add the constraind between the dummy masses and the CM atom.
+
+4. Add the following line to the [ constraints ] section of ffbonded.itp (preferably together with the other MCH3 constraints to make it easy to find.
+
+ MCH3   CM      2    0.164889
+
+5. Run gmx pdb2gmx -f ... -vsite hydrogens, selecting your newly edited force field, followed by editconf and other commands to prepare your system. You will now be able to simulate DNA using a 5 fs time step. Just remember to use constraints to remove even faster degrees of freedom.
+
+A short dsDNA has been included in the DT directory to test this example.
