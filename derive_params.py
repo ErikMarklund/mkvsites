@@ -6,6 +6,7 @@ import argparse
 import dihedral_convert as dconv
 from sys import stdout
 import basics
+from os import path
 
 class interaction:
     def __init__(self):
@@ -68,7 +69,7 @@ class interaction:
         else:
             raise ValueError
 
-    def dump(self, bSkip=False):
+    def dump(self, bSkip=False, macro=None):
         if bSkip:
             s = ";   "
         else:
@@ -79,15 +80,18 @@ class interaction:
         s = s + "{:4s}".format(self.func)
 
         if self.get_type() == 'dihedral':
-            for p in self.k:
-                s = s + "    {:s}".format(p)
+            if macro:
+                s = s + "    {:s}".format(macro.name)
+            else:
+                for p in self.k:
+                    s = s + "    {:s}".format(p)
         else:
             s = s + "    {:s}".format(self.r)
             s = s + "    {:s}".format(self.k)
 
         print s
 
-    def rtp_dump_interaction(self, ostream=stdout, bDumpParams=False):
+    def rtp_dump_interaction(self, ostream=stdout, bDumpParams=False, macro=None):
         s = "  "
         for a in self.a:
             s = s + "{:6s}".format(a)
@@ -96,21 +100,51 @@ class interaction:
         #s = s + "{:4s}".format(self.func)
 
         if bDumpParams:
-             if self.get_type() == 'dihedral':
-                 if int(self.get_func()) in (1,9):
-                     s = s + "    {: 8.6e}".format(float(self.k[0]))
-                     s = s + "    {: 8.6e}".format(float(self.k[1]))
-                     s = s + "    {:3d}".format(int(self.k[2]))
-                 else:
-                     for p in self.k:
-                         s = s + "    {: 8.6e}".format(float(p))
-             else:
-                 s = s + "    {:s}".format(self.r)
-                 for p in self.k.split():
-                     s = s + "    {: 8.6e}".format(float(p))
+            if macro:
+                s = s + "    {:s}".format(macro.get_name())
+
+            else:
+                if self.get_type() == 'dihedral':
+                    if int(self.get_func()) in (1,9):
+                        s = s + "    {: 8.6e}".format(float(self.k[0]))
+                        s = s + "    {: 8.6e}".format(float(self.k[1]))
+                        s = s + "    {:3d}".format(int(self.k[2]))
+                    else:
+                        for p in self.k:
+                            s = s + "    {: 8.6e}".format(float(p))
+                else:
+                    s = s + "    {:s}".format(self.r)
+                    for p in self.k.split():
+                        s = s + "    {: 8.6e}".format(float(p))
 
         s = s + "\n"
         ostream.write(s)
+
+    def make_macro(self, name='MACRO'):
+        r = self.get_r()
+        k = self.get_k()
+        if type(k) == type([]):
+            macrodef = ' '.join([r]+k)
+        else:
+            macrodef = ' '.join([r, k])
+
+        return parameter_macro(name=name, params=macrodef)
+
+
+class parameter_macro():
+    def __init__(self, name='MACRO', params=''):
+        self.name = name
+        self.params = params
+
+    def get_name(self):
+        return self.name
+
+    def get_params(self):
+        return self.params
+
+    def dump(self, f):
+        f.write('#define  {:20s}  {:s}\n'.format(self.name, self. params))
+
 
 def make_unique(I):
     UI = []
@@ -206,10 +240,11 @@ if __name__=='__main__':
     parser.add_argument('file', action='store', nargs=1, type=str, help='itp or rtp file')
     parser.add_argument('-cv', '--convert-dihedrals', action='store', nargs=1, type=str, metavar='"X Y ..."', dest='conv_str', help='Convert dihedrals of type X to Y. Multiple pairs can be provided.')
     parser.add_argument('-minf', '--min-force-constant', action='store', nargs=1, type=str, metavar='Fmin', dest='fmin', help='Remove converted dihedrals if force constant is below this value (default: 1e-5 kJ/mol).')
-    parser.add_argument('-r', '--rtp', action='store', nargs=1, type=str, metavar='mymol.rtp', dest='rtp', help='Create rtp entry and write to file.')
+    parser.add_argument('-r', '--rtp-name', action='store', nargs=1, type=str, metavar='mymol.rtp', dest='rtp', help='Create rtp file.')
     parser.add_argument('-rb', '--rtp-bond-parameters', action='store_true', dest='rb', help='Write bond parameters in rtp file.')
     parser.add_argument('-ra', '--rtp-angle-parameters', action='store_true', dest='ra', help='Write angle parameters in rtp file.')
     parser.add_argument('-rd', '--rtp-dihedral-parameters', action='store_true', dest='rd', help='Write dihedral parameters in rtp file.')
+    parser.add_argument('-m', '--rtp-dihedral-macros', action='store_true', dest='pm', help='Define and use macros for dihedral parameter values in rtp.')
     args = parser.parse_args()
 
     #fname='/Users/erikmarklund/Projects/Interface_evolution/Structures/topologies/SR1_cofactor_new/FF_CONV/BCC/GMX_SR1_cofactor_new/SR1_cofactor_new.top'
@@ -241,8 +276,9 @@ if __name__=='__main__':
     bRtpB = args.rb
     bRtpA = args.ra
     bRtpD = args.rd
+    bMacros = args.pm
 
-    print bRtpB, bRtpA, bRtpD
+    # print bRtpB, bRtpA, bRtpD
 
     adict = atom_dict()
     idict = atom_dict()
@@ -405,6 +441,7 @@ if __name__=='__main__':
     if rtp_name:
         rtp_file.write("\n [ dihedrals ]\n")
 
+
     # Functionalise this since it is reused below
     for d in udihedrals:
         if conv:
@@ -477,62 +514,91 @@ if __name__=='__main__':
         else:
             d.dump()
 
-    for d in adihedrals:
-        if conv:
-            # Skip all checks. They were passed above.
-            t = int(d.get_func())
 
-            # Make general dihedral, then convert.
-            if type(d.k) == type([]):
-                params = ' '.join([str(s) for s in d.k])
-            else:
-                params = d.k
+    if rtp_name:
+        d_macros = []
+        for pnr,d in enumerate(adihedrals):
+            if conv:
+                # Skip all checks. They were passed above.
+                t = int(d.get_func())
 
-            cd = dconv.cdihedral(atoms=d.a, ft=t, params=params)
-            dnew = cd.make_specific()
-
-            if type(dnew) != type([]):
-                dnew = [dnew]
-
-            for dn in dnew:
-                # This 'switch' must match the supported conversions
-                if (conv[t] == 1):
-                    # dc = dn.make_proper()
-                    raise ValueError('Most dihedrals cannot be converted to proper. Try proper multiple (ft=9)')
-                elif (conv[t] == 3):
-                    dc = dn.make_rb()
-                elif (conv[t] == 5):
-                    dc = dn.make_fourier()
-                elif (conv[t] == 9):
-                    dc = dn.make_propermultiple()
+                # Make general dihedral, then convert.
+                if type(d.k) == type([]):
+                    params = ' '.join([str(s) for s in d.k])
                 else:
-                    raise ValueError('Unsupported dihedral type')
+                    params = d.k
 
-                if type(dc) != type([]):
-                    dc = [dc]
-                for dcc in dc:
-                    ft = dcc.get_ft()
-                    dni = interaction()
-                    dni.set_a(dcc.atoms)
-                    dni.set_func(str(ft))
-                    pp = dcc.get_params()
-                    if type(pp) == type([]):
-                        dni.set_k([str(p) for p in dcc.get_params()])
+                cd = dconv.cdihedral(atoms=d.a, ft=t, params=params)
+                dnew = cd.make_specific()
+
+                if type(dnew) != type([]):
+                    dnew = [dnew]
+
+                for dn in dnew:
+                    # This 'switch' must match the supported conversions
+                    if (conv[t] == 1):
+                        # dc = dn.make_proper()
+                        raise ValueError('Most dihedrals cannot be converted to proper. Try proper multiple (ft=9)')
+                    elif (conv[t] == 3):
+                        dc = dn.make_rb()
+                    elif (conv[t] == 5):
+                        dc = dn.make_fourier()
+                    elif (conv[t] == 9):
+                        dc = dn.make_propermultiple()
                     else:
-                        dni.set_k(str(pp))
+                        raise ValueError('Unsupported dihedral type')
 
-                    if conv[t] in (1,9):
-                        bSkipit = False
-                        pparam = dcc.get_params()
-                        if abs(pparam[1]) < kmin:
-                            bKok = False
-                            bSkipit = True
+                    if type(dc) != type([]):
+                        dc = [dc]
+                    for dcc in dc:
+                        ft = dcc.get_ft()
+                        dni = interaction()
+                        dni.set_a(dcc.atoms)
+                        dni.set_func(str(ft))
+                        pp = dcc.get_params()
+                        if type(pp) == type([]):
+                            dni.set_k([str(p) for p in dcc.get_params()])
+                        else:
+                            dni.set_k(str(pp))
 
-                    if not bSkipit:
-                        dni.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD)
+                        if conv[t] in (1,9):
+                            bSkipit = False
+                            pparam = dcc.get_params()
+                            if abs(pparam[1]) < kmin:
+                                bKok = False
+                                bSkipit = True
 
-        else:
-            d.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD)
+                        if not bSkipit:
+                            if bMacros:
+                                macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
+                                pmacro = dni.make_macro(name=macroname)
+                                d_macros.append(pmacro)
+                            else:
+                                pmacro = None
+
+                            dni.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
+
+            else:
+                if bMacros:
+                    macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
+                    pmacro = d.make_macro(name=macroname)
+                    d_macros.append(pmacro)
+                else:
+                    pmacro = None
+
+                d.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
+
+        if d_macros:
+            mfname, mfext = path.splitext(rtp_file.name)
+            mfname = mfname + '_macros.txt'
+            with open(mfname, 'w') as mf:
+                try:
+                    mf.write('; Add these dihedral parameters to ffbonded.itp\n;\n')
+                    for m in d_macros:
+                        m.dump(mf)
+                except IOError:
+                    print('Error when writing to file {:s}.'.format(mfname))
+                    raise
 
     if conv:
         print 'NOTE: Not all dihedrals contain constant energy offsets,'
