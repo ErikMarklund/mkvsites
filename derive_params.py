@@ -610,3 +610,8 @@ if __name__=='__main__':
         output('NOTE: Some dihedrals have small force coefficients for ')
         output('      numerical reasons, lower than the stipulated cut-off.')
         output('      These have been commented out above.')
+
+    output('################################################')
+    output(' Note that new atomtypes have nonsense masses.')
+    output(' We cannot safely derive elements/masses in all')
+    output(' cases, so that is left to the user to sort out')
