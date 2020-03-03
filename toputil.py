@@ -86,7 +86,7 @@ class Cpp():
     def parse(self, fname):
         """Returns a list of lines that can be read like an open file."""
         cmd = [self.exe] + self.flags.split() + [fname]
-        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE)
+        p = sp.Popen(cmd, stdout=sp.PIPE, stderr=sp.PIPE, universal_newlines=True)
         so, se = p.communicate()
 
         if so:
