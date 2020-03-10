@@ -7,8 +7,14 @@ interactions, new dummy-mass atom types and associated parameters for
 virtual site constructions, and angle constraints for -OH groups. To
 make use of the native machinery in pdb2gmx for inserting dummy atoms
 etc we create an rtp file from the estrogen topology file using
-derive_params.py. The necessary files EST.top and EST.pdb are both
+topinspect.py. The necessary files EST.top and EST.pdb are both
 available in the EST folder.
+
+We assume we have a gromacs installation available. Bbefore we start,
+let's run the GMXRC to set the GMXDATA environment variable etc. (here,
+assuming bash).
+
+  source <path-to-gromacs>/bin/GMXRC.bash
 
 
 1. MAKING A WORKING COPY OF THE FORCE FIELD
@@ -33,7 +39,7 @@ constructions from our parameters, add dummy atoms in the right place,
 etc.
 
 
-2.1 Run python derive_params.py -r EST.rtp -rd -m EST.top
+2.1 Run python topinspect.py -r EST.rtp -rd -m EST.top
 
 This will produce a list of the atom types and their interaction
 types. The -r option will create the rtp-file EST.rtp based on the
