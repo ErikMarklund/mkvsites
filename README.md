@@ -14,8 +14,6 @@ Install Gromacs if needed, set up paths with GMXRC. Install python if needed.
 
 * Configuration
 
-issue `source <path-to-gromacs-installation>/bin/GMXRC.bash` (assuming bash)
-
 * Dependencies
 
     + Gromacs
@@ -27,10 +25,10 @@ issue `source <path-to-gromacs-installation>/bin/GMXRC.bash` (assuming bash)
 
 * Deployment instructions
 
-    The amber99sb-ildn force field is used by default. -ff can be used to specify another force field.
+    + For itp files: `python mkvsites.py -ff <path-to>/<forcefield>.ff topology.itp`
+    + For rtp files: `python mkvsites.py -ff <path-to>/<forcefield>.ff -res=POPE residues.rtp`
 
-    + For itp files: `python mkvsites.py -ff=charmm36.ff <path-to>/topology.itp`
-    + For rtp files: `python mkvsites.py -ff=charmm36.ff -res=POPE $GMXDATA/top/charmm36.ff/merged.rtp`
+See mkvsites.py -h and topinspect.py -h for more information.
 
 ### Contribution guidelines ###
 
