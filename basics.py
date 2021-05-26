@@ -26,7 +26,17 @@ from sys import stderr, stdout
 
 # Some basic functions
 
-class boolBase(object):
+class vsBaseObject():
+    """Very generic base class with defined __repr__()
+    to facilitate printing during debugging"""
+    def __repr__(self):
+        s = type(self).__name__+':'
+        for k,v in self.__dict__.items():
+            s += f'\n  {k:20s} = {v}'
+        return s
+
+
+class boolBase(vsBaseObject):
     """Generic base class with method for assessing True/False.
     If none of its values evaluates to True, the object is false.
     """

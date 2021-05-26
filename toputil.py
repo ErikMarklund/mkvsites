@@ -47,7 +47,7 @@ class topBase(boolBase):
         self.impropers = impropers[:]
 
         
-class atom(object):
+class atom(vsBaseObject):
     """Atom class"""
     
     def __init__(self, name='', type='', q=0.0, cgnr=0):
@@ -63,7 +63,7 @@ class atom(object):
         output("{:8s}{:8s}".format(self.name, self.type), ostream=ostream)
     
 
-class bond(object):
+class bond(vsBaseObject):
     """Bond class"""
 
     def __init__(self, atoms=[], ftype=0, params=[]):
@@ -75,8 +75,8 @@ class bond(object):
             self.ftype  = ftype
             self.params = params
 
-
-class angle(object):
+            
+class angle(vsBaseObject):
     """Angle class"""
 
     def __init__(self, atoms=[], ftype=0, params=[]):
@@ -89,7 +89,7 @@ class angle(object):
             self.params = params
 
 
-class dihedral(object):
+class dihedral(vsBaseObject):
     """Dihedral class. Also used for impropers."""
 
     def __init__(self, atoms=[], ftype=0, params=[]):
@@ -101,7 +101,7 @@ class dihedral(object):
             self.ftype  = ftype
             self.params = params
 
-class Cpp():
+class Cpp(vsBaseObject):
     """C-preprocessor wrapper class"""
     def __init__(self, defs=[], exe='cpp', flags='-E -P'):
         self.exe = exe[:]

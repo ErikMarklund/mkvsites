@@ -32,6 +32,7 @@ import rtp
 import itp
 # Topology class and functions for reading rtp files and itp/top files.
 
+
 # Class for storing the angle constraints.
 class constraint(boolBase):
     """Class fopr storing the angle constraints"""
@@ -258,7 +259,7 @@ class node(boolBase):
         
         return v
 
-class topology:
+class topology(boolBase):
     """Topology class"""
     
     def __init__(self):
@@ -272,7 +273,6 @@ class topology:
         self.nodes  = []
         self.angleConstraints = []
         self.vsites = []
-
 
     def FFread(self):
         """Reads the forcefield"""
