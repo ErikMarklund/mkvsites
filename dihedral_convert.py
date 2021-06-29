@@ -188,9 +188,9 @@ class pdihedral(cdihedral):
         try:
             V = self.k * (1+cos(self.m * PHI - self.phi*pi/180.))
         except:
-            print self.k
-            print self.m
-            print self.phi
+            print(self.k)
+            print(self.m)
+            print(self.phi)
             raise
         return V
 
@@ -355,7 +355,7 @@ def test():
     drb.plot()
     plt.savefig('df_drb.pdf')
     plt.close()
-    print drb.C
+    print(drb.C)
 
     drb.set_C([9.28, 12.16, -13.12, -3.06, 26.24, 0.0])
     drb.plot()

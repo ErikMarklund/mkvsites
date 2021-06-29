@@ -136,6 +136,13 @@ class node(boolBase):
         self.center = center
         self.neighbours = neighbours
 
+    def __repr__(self):
+        s = f'  center={self.center.name}, neighbours= [ '
+        for n in self.neighbours:
+            s += f'{n.name} '
+        s += ']\n'
+        return s
+
     def addCenter(self, center):
         """Add center atom to node"""
         if type(center) != atom:
@@ -273,6 +280,54 @@ class topology(boolBase):
         self.nodes  = []
         self.angleConstraints = []
         self.vsites = []
+
+    def __repr__(self):
+        s = type(self).__name__+':\n'
+
+        s += f'{"atoms":20s} = [ '
+        for a in self.atoms:
+            s += f'{a.name} '
+        s += ']\n'
+
+        s += f'{"bonds":20s} = [ '
+        for b in self.bonds:
+            s += b.atoms.__repr__() + ' '
+        s += ']\n'
+
+        s += f'{"angles":20s} = [ '
+        for a in self.angles:
+            s += a.atoms.__repr__() + ' '
+        s += ']\n'
+
+        s += f'{"dihedrals":20s} = [ '
+        for d in self.dihedrals:
+            s += d.atoms.__repr__() + ' '
+        s += ']\n'
+
+        s += f'{"impropers":20s} = [ '
+        for d in self.dihedrals:
+            s += d.atoms.__repr__() + ' '
+        s += ']\n'
+
+        s += f'{"nodes":20s} = [ \n'
+        for n in self.nodes:
+            s += f'  center:{n.center.name}, neighbours: [ '
+            for nn in n.neighbours:
+                s += f'{nn.name} '
+            s += ']\n'
+        s += ']\n'
+
+        s += f'{"angleConstraints":20s} = [ \n'
+        for a in self.angleConstraints:
+            s += f'  {a.atoms[0]}--{a.atoms[1]}: {a.b0}\n'
+        s += ']\n'
+
+        s += f'{"vsites":20s} = [ \n'
+        for v in self.vsites:
+            s += f'{v.__repr__()} '
+        s += ']\n'
+
+        return s
 
     def FFread(self):
         """Reads the forcefield"""
@@ -496,7 +551,7 @@ class topology(boolBase):
 
         for a in self.nodes:
             c = a.makeAngleConstraint(self.ffield)
-            if c:
+            if len(c.atoms)==2:
                 self.angleConstraints.append(c)
                 
     def makeVsites(self):

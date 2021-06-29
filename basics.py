@@ -30,9 +30,9 @@ class vsBaseObject():
     """Very generic base class with defined __repr__()
     to facilitate printing during debugging"""
     def __repr__(self):
-        s = type(self).__name__+':'
+        s = type(self).__name__+':\n'
         for k,v in self.__dict__.items():
-            s += f'\n  {k:20s} = {v}'
+            s += f'  {k:20s} = {v}\n'
         return s
 
 
@@ -40,12 +40,14 @@ class boolBase(vsBaseObject):
     """Generic base class with method for assessing True/False.
     If none of its values evaluates to True, the object is false.
     """
-    def __nonzero__(self):
+    def __bool__(self):
         V = vars(self)
         for v in V.values():
             if v:
                 return True
         return False
+
+    __nonzero__ = __bool__
 
 def warn(s, bEndline=True, bWarn=True, bError=False, ostream=stderr, bPrint=True):
     """Issues a warning or error to stderr or other stream."""
