@@ -40,7 +40,7 @@ import argparse
 # and generates the necessary parameters using bond lengths and angles from forcefield.
 
 if __name__ == '__main__':
-    __version__ = '0.1'
+    __version__ = '1.0'
 
     parser = argparse.ArgumentParser(description="Calculates missing constraints for virtual-site constructions.")
     parser.add_argument('-ff', '--force-field', action='store', nargs=1, type=str, required=True, metavar='FF', dest='ff', help='Path to force field.')
