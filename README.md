@@ -17,7 +17,7 @@ Install Gromacs if needed, set up paths with GMXRC. Install python if needed.
 * Dependencies
 
     + Gromacs
-    + Python
+    + Python 3
 
 * How to run tests
 
