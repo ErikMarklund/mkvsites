@@ -30,12 +30,51 @@ from sys import stdout, stderr
 from basics import *
 from os import path
 
+class atomtype:
+    def __init__(self, topline=''):
+        if topline:
+            sline = topline.split(';')[0].split()
+            self.name   = sline[0]
+            self.atnum  = sline[1]
+            self.m      = sline[2]
+            self.q      = sline[3]
+            self.ptype  = sline[4]
+            self.sig    = sline[5]
+            self.eps    = sline[6]
+        else:
+            self.name   = ''
+            self.atnum  = ''
+            self.m      = ''
+            self.q      = ''
+            self.ptype  = ''
+            self.sig    = ''
+            self.eps    = ''
+
+    def __repr__(self):
+        return f'{self.name} {self.atnum} m={self.m} q={self.q} {self.ptype} s={self.sig} eps={self.eps}'
+
+    def topformat(self):
+        s = f'{self.name:8s} {self.atnum:4s} '
+        s += f'{float(self.m):7.4f} {float(self.q):7.4f} '
+        s += f'{self.ptype:3s} {float(self.sig):10.6g} {float(self.eps):10.6g}'
+        return s
+
+    def find_mass(self, atoms):
+        for a in atoms:
+            if a.atype == self.name:
+                self.m = str(a.m)
+                return
+        output(f'No mass found for atomtype {self.name}')
+
 class interaction:
     def __init__(self):
         self.a = []
         self.func = '0'
         self.r = '0.0'
         self.k = '0.0'
+
+    def __repr__(self):
+        return f'{self.a}, ft={self.func}, r={self.r}, k={self.k}'
 
     def issame(self, I):
         if len(self.a) != len(I.a):
@@ -87,7 +126,10 @@ class interaction:
         elif l==3:
             return 'angle'
         elif l==4:
-            return 'dihedral'
+            if self.func in ['2','4']:
+                return 'improper'
+            else:
+                return 'dihedral'
         else:
             raise ValueError
 
@@ -101,7 +143,7 @@ class interaction:
 
         s = s + "{:4s}".format(self.func)
 
-        if self.get_type() == 'dihedral':
+        if self.get_type() in ['dihedral', 'improper']:
             if macro:
                 s = s + "    {:s}".format(macro.name)
             else:
@@ -329,7 +371,7 @@ if __name__=='__main__':
                 ssline=sline.split()
 
                 if section == 'atomtypes':
-                    atomtypes.append(sline)
+                    atomtypes.append(atomtype(topline=sline))
 
                 if section == 'atoms':
                     adict.store(ssline[4], ssline[1])
@@ -373,6 +415,9 @@ if __name__=='__main__':
             exit(1)
 
 
+    # First translate atoms from indices to atom names
+    # Then translate from atom names to atom types
+
     abonds = [idict.make_abstract_interaction(b) for b in bonds]
     tbonds = [adict.make_abstract_interaction(b) for b in abonds]
 
@@ -382,14 +427,41 @@ if __name__=='__main__':
     adihedrals = [idict.make_abstract_interaction(d) for d in dihedrals]
     tdihedrals = [adict.make_abstract_interaction(d) for d in adihedrals]
 
+
+    # Now make unique interaction types from all the specific interactions.
+
     ubonds = make_unique(tbonds)
     uangles = make_unique(tangles)
     udihedrals = make_unique(tdihedrals)
 
+    uproper = []
+    uimproper = []
+    for ud in udihedrals:
+        dtype = ud.get_type()
+        if dtype == 'improper':
+            uimproper.append(ud)
+        elif dtype == 'dihedral':
+            uproper.append(ud)
+        else:
+            warn('Dihedral neither proper nor improper type.', bError=True)
+            exit(2)
+
+    aproper = []
+    aimproper = []
+    for ad in adihedrals:
+        dtype = ad.get_type()
+        if dtype == 'improper':
+            aimproper.append(ad)
+        elif dtype == 'dihedral':
+            aproper.append(ad)
+        else:
+            warn('Dihedral neither proper nor improper type.', bError=True)
+            exit(2)
 
     output("=== ATOM TYPES ===")
     for a in atomtypes:
-        output(a)
+        a.find_mass(atoms)
+        output(a.topformat())
 
     if rtp_name:
         try:
@@ -412,13 +484,18 @@ if __name__=='__main__':
             if angles:
                 at = angles[0].get_func()
             if udihedrals:
-                dt = dihedrals[0].get_func()
+                #dt = dihedrals[0].get_func()
+                dt = uproper[0].get_func()
                 if conv:
                     idt = int(dt)
                     output('converting default {:d} to {:d}'.format(idt, conv[idt]))
                     if idt in conv.keys():
                         dt = str(conv[idt])
-                it = dt
+                if uimproper:
+                    it = uimproper[0].get_func()
+                else:
+                    it = dt
+
             rtp_file.write("{:>6d}{:>6d}{:>6d}{:>6d} ; Derived from first parameters found. Check!\n\n".format(int(bt),int(at),int(dt),int(it)))
 
             rtp_file.write("[ {:s} ]\n".format(atoms[0].rname))
@@ -458,98 +535,37 @@ if __name__=='__main__':
 
     bKok = True
 
-    if rtp_name:
-        rtp_file.write("\n [ dihedrals ]\n")
-
 
     # Functionalise this since it is reused below
-    for d in udihedrals:
-        if conv:
-            t = int(d.get_func())
-
-            if t not in conv.keys():
-                warn('Could not convert type {:d}, because it is not in list of conversions:'.format(t), bError=True)
-                output(conv, ostream=stderr)
-                exit(1)
-
-            if t not in convertable_dihedrals.keys() or \
-              conv[t] not in convertable_dihedrals.keys():
-                warn('Dihedral type {:d} (or {:d}) cannot be converted (to). Convertable dihedrals are:'.format(t, conv[t]), bError=True)
-                for k,v in convertable_dihedrals.items():
-                    output('{:4d} - {:s}'.format(k, v))
-                exit(1)
-
-            # Make general dihedral, then convert.
-            if type(d.k) == type([]):
-                params = ' '.join([str(s) for s in d.k])
-            else:
-                if type(d.k) == type(''):
-                    params = d.k
-                else:
-                    warn('d.k is of unsupported type {:s}'.format(type(d.k)), bError=True)
-                    raise TypeError
-
-            cd = dconv.cdihedral(atoms=d.a, ft=t, params=params)
-
-            dnew = cd.make_specific()
-
-            if type(dnew) != type([]):
-                dnew = [dnew]
-
-            for dn in dnew:
-                # This 'switch' must match the supported conversions
-                if (conv[t] == 1):
-                    # dc = dn.make_proper()
-                    raise ValueError('Most dihedrals cannot be converted to proper. Try proper multiple (ft=9)')
-                elif (conv[t] == 3):
-                    dc = dn.make_rb()
-                elif (conv[t] == 5):
-                    dc = dn.make_fourier()
-                elif (conv[t] == 9):
-                    dc = dn.make_propermultiple()
-                else:
-                    raise ValueError('Unsupported dihedral type')
-
-                if type(dc) != type([]):
-                    dc = [dc]
-                for dcc in dc:
-                    ft = dcc.get_ft()
-                    dni = interaction()
-                    dni.set_a(dcc.atoms)
-                    dni.set_func(str(ft))
-                    pp = dcc.get_params()
-                    if type(pp) == type([]):
-                        dni.set_k([str(p) for p in dcc.get_params()])
-                    else:
-                        dni.set_k(str(pp))
-
-                    if conv[t] in (1,9):
-                        bSkipit = False
-                        pparam = dcc.get_params()
-                        if abs(pparam[1]) < kmin:
-                            bKok = False
-                            bSkipit = True
-
-                    dni.dump(bSkip=bSkipit)
-
-        else:
-            d.dump()
-
-
-    if rtp_name:
-        d_macros = []
-        for pnr,d in enumerate(adihedrals):
+    for D in [uproper, uimproper]:
+        for d in D:
             if conv:
-                # Skip all checks. They were passed above.
                 t = int(d.get_func())
+
+                if t not in conv.keys():
+                    warn('Could not convert type {:d}, because it is not in list of conversions:'.format(t), bError=True)
+                    output(conv, ostream=stderr)
+                    exit(1)
+
+                if t not in convertable_dihedrals.keys() or \
+                  conv[t] not in convertable_dihedrals.keys():
+                    warn('Dihedral type {:d} (or {:d}) cannot be converted (to). Convertable dihedrals are:'.format(t, conv[t]), bError=True)
+                    for k,v in convertable_dihedrals.items():
+                        output('{:4d} - {:s}'.format(k, v))
+                    exit(1)
 
                 # Make general dihedral, then convert.
                 if type(d.k) == type([]):
                     params = ' '.join([str(s) for s in d.k])
                 else:
-                    params = d.k
+                    if type(d.k) == type(''):
+                        params = d.k
+                    else:
+                        warn('d.k is of unsupported type {:s}'.format(type(d.k)), bError=True)
+                        raise TypeError
 
                 cd = dconv.cdihedral(atoms=d.a, ft=t, params=params)
+
                 dnew = cd.make_specific()
 
                 if type(dnew) != type([]):
@@ -589,25 +605,96 @@ if __name__=='__main__':
                                 bKok = False
                                 bSkipit = True
 
-                        if not bSkipit:
-                            if bMacros:
-                                macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
-                                pmacro = dni.make_macro(name=macroname)
-                                d_macros.append(pmacro)
-                            else:
-                                pmacro = None
-
-                            dni.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
+                        dni.dump(bSkip=bSkipit)
 
             else:
-                if bMacros:
-                    macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
-                    pmacro = d.make_macro(name=macroname)
-                    d_macros.append(pmacro)
-                else:
-                    pmacro = None
+                try:
+                    d.dump()
+                except TypeError:
+                    output('Problematic dihedral:')
+                    output(d.__repr__())
+                    raise
 
-                d.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
+
+    if rtp_name:
+        d_macros = []
+        for D in [aproper, aimproper]:
+            if D:
+                if D[0].get_type() == 'improper':
+                    rtp_file.write("\n [ impropers ]\n")
+                else:
+                    rtp_file.write("\n [ dihedrals ]\n")
+
+            for pnr,d in enumerate(D):
+                if conv:
+                    # Skip all checks. They were passed above.
+                    t = int(d.get_func())
+
+                    # Make general dihedral, then convert.
+                    if type(d.k) == type([]):
+                        params = ' '.join([str(s) for s in d.k])
+                    else:
+                        params = d.k
+
+                    cd = dconv.cdihedral(atoms=d.a, ft=t, params=params)
+                    dnew = cd.make_specific()
+
+                    if type(dnew) != type([]):
+                        dnew = [dnew]
+
+                    for dn in dnew:
+                        # This 'switch' must match the supported conversions
+                        if (conv[t] == 1):
+                            # dc = dn.make_proper()
+                            raise ValueError('Most dihedrals cannot be converted to proper. Try proper multiple (ft=9)')
+                        elif (conv[t] == 3):
+                            dc = dn.make_rb()
+                        elif (conv[t] == 5):
+                            dc = dn.make_fourier()
+                        elif (conv[t] == 9):
+                            dc = dn.make_propermultiple()
+                        else:
+                            raise ValueError('Unsupported dihedral type')
+
+                        if type(dc) != type([]):
+                            dc = [dc]
+                        for dcc in dc:
+                            ft = dcc.get_ft()
+                            dni = interaction()
+                            dni.set_a(dcc.atoms)
+                            dni.set_func(str(ft))
+                            pp = dcc.get_params()
+                            if type(pp) == type([]):
+                                dni.set_k([str(p) for p in dcc.get_params()])
+                            else:
+                                dni.set_k(str(pp))
+
+                            if conv[t] in (1,9):
+                                bSkipit = False
+                                pparam = dcc.get_params()
+                                if abs(pparam[1]) < kmin:
+                                    bKok = False
+                                    bSkipit = True
+
+                            if not bSkipit:
+                                if bMacros:
+                                    macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
+                                    pmacro = dni.make_macro(name=macroname)
+                                    d_macros.append(pmacro)
+                                else:
+                                    pmacro = None
+
+                                dni.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
+
+                else:
+                    if bMacros:
+                        macroname = 'MKV_{:s}_{:03d}'.format(atoms[0].rname, pnr)
+                        pmacro = d.make_macro(name=macroname)
+                        d_macros.append(pmacro)
+                    else:
+                        pmacro = None
+
+                    d.rtp_dump_interaction(ostream=rtp_file, bDumpParams=bRtpD, macro=pmacro)
 
         if d_macros:
             mfname, mfext = path.splitext(rtp_file.name)
@@ -633,7 +720,6 @@ if __name__=='__main__':
         output('      numerical reasons, lower than the stipulated cut-off.')
         output('      These have been commented out above.')
 
-    output('################################################')
-    output(' Note that new atomtypes have nonsense masses.')
-    output(' We cannot safely derive elements/masses in all')
-    output(' cases, so that is left to the user to sort out')
+    output('##################################################')
+    output(' Note that masses for new atomtypes are derived   ')
+    output(' from the [ atoms ] section. Check their validity ')
