@@ -81,7 +81,8 @@ def output(s, bEndline=True, ostream=stdout, bPrint=True):
 def cite_mkvsites():
     """Returns a string with citataion info"""
     s = 'Per Larsson, Rosita Carolina Kneisz, Erik G Marklund\n' \
-      + 'MkVsites: A general-purpose python tool to increase\n' \
-      + 'performance  in  all-atom  molecular  dynamics simulations\n' \
-      + 'Journal X(XX):XXX--XXXX.'
+      + 'MkVsites: A tool for creating GROMACS virtual sites parameters\n' \
+      + 'to increase performance in all-atom molecular dynamics simulations.\n' \
+      + '(2020) J. Comput. Chem. 41(2):1564-1569.\n' \
+      + 'http://dx.doi.org/10.1002/jcc.26198'
     return s
